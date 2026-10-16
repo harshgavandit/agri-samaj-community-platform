@@ -1,0 +1,81 @@
+{
+  "name": "agri-samaj-platform",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint src tests --max-warnings 0",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:seed": "node prisma/seed.js",
+    "test": "tsx --test tests/*.test.ts",
+    "type-check": "tsc --noEmit",
+    "test:e2e": "node tests/run-e2e.mjs",
+    "db:deploy": "prisma migrate deploy",
+    "db:status": "prisma migrate status",
+    "db:init": "node scripts/db-init.mjs",
+    "check:env": "node scripts/check-env.mjs",
+    "prestart": "node scripts/check-env.mjs"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/noto-sans-devanagari": "^5.3.0",
+    "@prisma/client": "^5.21.1",
+    "bcryptjs": "^2.4.3",
+    "clsx": "^2.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^1.58.0",
+    "next": "^15.5.28",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^2.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.64.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^20.17.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "postcss": "^8.5.30",
+    "prettier": "^3.9.10",
+    "prisma": "^5.21.1",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.64.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "overrides": {
+    "postcss": "$postcss",
+    "postcss-selector-parser": "^7.1.6"
+  },
+  "description": "An open-source Marathi-English community platform helping Agri Samaj entrepreneurs, volunteers, and community members connect and support one another.",
+  "license": "MIT",
+  "author": "Harsh Gavand",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/harshgavandit/agri-samaj-community-platform.git"
+  },
+  "homepage": "https://github.com/harshgavandit/agri-samaj-community-platform#readme",
+  "bugs": {
+    "url": "https://github.com/harshgavandit/agri-samaj-community-platform/issues"
+  },
+  "keywords": [
+    "agri-samaj",
+    "community",
+    "marathi",
+    "open-source",
+    "business-directory",
+    "nextjs"
+  ]
+}

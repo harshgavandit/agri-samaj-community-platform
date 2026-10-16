@@ -1,0 +1,158 @@
+@import "tailwindcss";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
+@import "@fontsource/noto-sans-devanagari/400.css";
+@import "@fontsource/noto-sans-devanagari/500.css";
+@import "@fontsource/noto-sans-devanagari/600.css";
+@import "@fontsource/noto-sans-devanagari/700.css";
+@import "@fontsource/noto-sans-devanagari/800.css";
+
+@config "../../tailwind.config.js";
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: #e2e8f0;
+  }
+}
+
+:root {
+  --font-inter: "Inter", sans-serif;
+  --font-noto-devanagari: "Noto Sans Devanagari", sans-serif;
+}
+
+body {
+  font-family: var(--font-inter), var(--font-noto-devanagari), sans-serif;
+  background-color: #faf8f5; /* Warm ivory background */
+  color: #0f172a; /* Deep Navy */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Subtle gold and copper border accents */
+.border-copper-accent {
+  border-color: #d97706;
+}
+
+.gradient-heritage {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #1e3a8a 100%);
+}
+
+.gradient-copper {
+  background: linear-gradient(135deg, #b45309 0%, #d97706 50%, #f59e0b 100%);
+}
+
+.card-hover-effect {
+  transition: all 0.25s ease-in-out;
+}
+.card-hover-effect:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.12);
+}
+
+/* Shared interaction and responsive foundations. */
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 7rem;
+}
+body {
+  line-height: 1.65;
+}
+main {
+  min-width: 0;
+}
+input,
+select,
+textarea {
+  min-height: 44px;
+  max-width: 100%;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  min-height: 20px;
+  width: 20px;
+  accent-color: #b45309;
+}
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  touch-action: manipulation;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+:focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: 4px;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline-offset: 2px;
+}
+.skip-link {
+  position: fixed;
+  top: -120px;
+  left: 1rem;
+  z-index: 100;
+  padding: 0.8rem 1.2rem;
+  background: #fff;
+  color: #0f172a;
+  border: 2px solid #b45309;
+  border-radius: 0.6rem;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+p,
+h1,
+h2,
+h3 {
+  overflow-wrap: anywhere;
+}
+.fixed.inset-0 form {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+  button {
+    min-height: 44px;
+  }
+  header nav a {
+    min-height: 44px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+table {
+  min-width: 640px;
+}
+td,
+th {
+  overflow-wrap: normal;
+}

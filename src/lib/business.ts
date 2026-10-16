@@ -1,0 +1,53 @@
+import { BusinessProfile } from "@prisma/client";
+
+// Only explicitly public fields may leave the directory API.
+export function publicBusiness(b: BusinessProfile & { category?: unknown }) {
+  return {
+    id: b.id,
+    refNumber: b.refNumber,
+    status: b.status,
+    businessName: b.businessName,
+    businessNameEn: b.businessNameEn,
+    ownerName: b.ownerName,
+    ownerNameEn: b.ownerNameEn,
+    brandName: b.brandName,
+    categoryId: b.categoryId,
+    category: b.category,
+    subCategory: b.subCategory,
+    subCategoryEn: b.subCategoryEn,
+    productsServices: b.productsServices,
+    productsServicesEn: b.productsServicesEn,
+    description: b.description,
+    descriptionEn: b.descriptionEn,
+    establishedYear: b.establishedYear,
+    businessClassification: b.businessClassification,
+    ownershipType: b.ownershipType,
+    workNature: b.workNature,
+    premisesOwnership: b.premisesOwnership,
+    employeeCountTotal: b.employeeCountTotal,
+    officeCity: b.officeCity,
+    officeCityEn: b.officeCityEn,
+    officeTaluka: b.officeTaluka,
+    officeTalukaEn: b.officeTalukaEn,
+    officeDistrict: b.officeDistrict,
+    officeDistrictEn: b.officeDistrictEn,
+    isAddressPublic: b.isAddressPublic,
+    ...(b.isAddressPublic
+      ? {
+          officeAddress: b.officeAddress,
+          officeAddressEn: b.officeAddressEn,
+          officePincode: b.officePincode,
+          factoryAddress: b.factoryAddress,
+          factoryCity: b.factoryCity,
+          factoryTaluka: b.factoryTaluka,
+          factoryDistrict: b.factoryDistrict,
+          factoryPincode: b.factoryPincode,
+        }
+      : {}),
+    phone: b.phone,
+    email: b.email,
+    website: /^https?:\/\//i.test(b.website || "") ? b.website : null,
+    logoUrl: b.logoUrl?.startsWith("/api/files/") ? b.logoUrl : null,
+    publishedAt: b.publishedAt,
+  };
+}
