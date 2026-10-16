@@ -30,6 +30,7 @@ test("member browser journey: register, save and resume a draft, upload, submit,
   page,
   browser,
 }) => {
+  if (process.env.E2E_BLOB_TEST === "true") test.setTimeout(180_000);
   await english(page);
   await page.goto("/register");
   await page.getByLabel("Full Name").fill("Browser Test Member");
@@ -78,11 +79,19 @@ test("member browser journey: register, save and resume a draft, upload, submit,
     .setInputFiles({
       name: "verification.pdf",
       mimeType: "application/pdf",
-      buffer: Buffer.from("%PDF-1.4\nE2E test document\n%%EOF"),
+      buffer:
+        process.env.E2E_BLOB_TEST === "true"
+          ? Buffer.concat([
+              Buffer.from("%PDF-1.4\n"),
+              Buffer.alloc(5 * 1024 * 1024 - 9, 32),
+            ])
+          : Buffer.from("%PDF-1.4\nE2E test document\n%%EOF"),
     });
   await expect(
     page.getByRole("link", { name: "View Uploaded Document" }),
-  ).toBeVisible();
+  ).toBeVisible({
+    timeout: process.env.E2E_BLOB_TEST === "true" ? 120_000 : 10_000,
+  });
   await page.locator("[name=termsAccepted]").check();
   await page.getByRole("button", { name: /Submit/i }).click();
   await expect(

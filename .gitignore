@@ -5,6 +5,7 @@ node_modules/
 
 # Next.js Build Output
 .next/
+.vercel/
 out/
 
 # Environment Variables
@@ -39,3 +40,5 @@ Thumbs.db
 *.db-shm
 *.sqlite
 *.sqlite3
+.vercel
+.env*

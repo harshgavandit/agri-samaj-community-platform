@@ -11,8 +11,18 @@ if (
   throw new Error(
     "Set JWT_SECRET to a unique cryptographically random value of at least 32 characters.",
   );
-if (!process.env.DATABASE_URL?.startsWith("file:"))
-  throw new Error("This Prisma schema requires a SQLite file: DATABASE_URL.");
+for (const name of ["DATABASE_URL", "DIRECT_URL"]) {
+  const connection = new URL(process.env[name] || "http://missing.invalid");
+  if (!["postgres:", "postgresql:"].includes(connection.protocol))
+    throw new Error(`${name} must be a PostgreSQL connection URL.`);
+  if (
+    !["localhost", "127.0.0.1"].includes(connection.hostname) &&
+    !["require", "verify-full"].includes(connection.searchParams.get("sslmode"))
+  )
+    throw new Error(
+      `${name} must require TLS for a remote PostgreSQL database.`,
+    );
+}
 const url = new URL(
   process.env.APP_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||

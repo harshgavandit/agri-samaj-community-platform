@@ -3,6 +3,8 @@
 [![Quality and browser verification](https://github.com/harshgavandit/agri-samaj-community-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/harshgavandit/agri-samaj-community-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+**Live website:** [agri-samaj-community-platform.vercel.app](https://agri-samaj-community-platform.vercel.app)
+
 **An open-source platform built to help the Agri Samaj community connect, support local entrepreneurs, and make community services easier to access.**
 
 आगरी समाजातील उद्योजक, व्यावसायिक, स्वयंसेवक आणि समाजबांधवांना एकत्र जोडण्यासाठी हे मुक्त-स्रोत डिजिटल व्यासपीठ तयार केले आहे. मराठी आणि इंग्रजीमधून व्यवसाय शोधणे, उद्योजकांना प्रोत्साहन देणे, उपक्रमांची माहिती मिळवणे आणि समाजाच्या कार्यात सहभागी होणे हा या प्रकल्पाचा उद्देश आहे.
@@ -34,7 +36,7 @@ flowchart LR
     Visitors[Community members and entrepreneurs] --> UI[Marathi-English Next.js interface]
     Admins[Administrators and authorized enumerators] --> UI
     UI --> API[Validated API routes and access checks]
-    API --> DB[(Prisma and SQLite)]
+    API --> DB[(Prisma and PostgreSQL)]
     API --> Files[Private upload storage]
     API --> Public[Approved public directory fields]
 ```
@@ -42,12 +44,12 @@ flowchart LR
 ## Stack and runtime
 
 - Next.js 15.5.28 App Router, React 19, TypeScript, Tailwind CSS 4, and locally bundled Inter / Noto Sans Devanagari fonts.
-- Prisma 5 with **SQLite**, versioned SQL migrations, database-backed rate limits, and audit logs.
+- Prisma 5 with **PostgreSQL**, versioned SQL migrations, database-backed rate limits, and audit logs.
 - JWT sessions in HttpOnly cookies; authorization checks use the current active database account and role.
-- Private disk storage for uploads, authenticated file access, and publicly accessible logos only after business approval.
+- Private Vercel Blob storage on Vercel; private disk storage for a single local host. Documents require authenticated access; image logos become public only after business approval.
 - Node.js 22 or newer. Tailwind 4 targets modern browsers: Chrome 111+, Safari 16.4+, and Firefox 128+.
 
-This checkout uses SQLite. Changing a database URL alone does not enable PostgreSQL; that requires a separate provider migration and verification. SQLite and file uploads require durable storage on one application host. Deploying to ephemeral serverless storage or multiple independent replicas requires a deliberate database/storage redesign.
+The application uses PostgreSQL with a pooled runtime connection and a direct migration connection. The Vercel deployment uses Neon PostgreSQL and a **private** Vercel Blob store in Singapore. The original SQLite database and SQL migrations remain available locally for backup and transfer; SQLite is no longer the application runtime.
 
 ## Fresh installation
 
@@ -59,7 +61,6 @@ Copy-Item .env.example .env
 # Edit .env with a real ADMIN_EMAIL, unique ADMIN_PASSWORD, and random JWT_SECRET.
 # Generate a secret locally: node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 npm run prisma:generate
-npm run db:init
 npm run db:deploy
 npm run prisma:seed
 npm run check:env
@@ -70,13 +71,21 @@ On Linux or macOS, use `cp .env.example .env` for the environment-file copy step
 
 Open <http://localhost:3000>. Sign in with the administrator credentials you configured in your own environment. Seed creates business categories and the explicitly configured administrator, preserving existing records. It does **not** fabricate member accounts, approved businesses, events, publications, or advertising rates. Create real rates in `/admin/advertisements` and approved publication records in `/admin/publications`. New rates and publications start unpublished in the management UI.
 
-Set `DATABASE_URL="file:./dev.db"` for the default local database; Prisma resolves this relative to `prisma/`. `db:init` creates a missing empty SQLite file without replacing an existing file, including the Windows initialization required by the Prisma engine. SQL migrations create the schema.
+Start a local PostgreSQL 17 database (or use your own PostgreSQL instance), then set both connection URLs in `.env`. For example:
+
+```powershell
+docker run --name agri-samaj-local -e POSTGRES_USER=agri -e POSTGRES_PASSWORD=local-development-only -e POSTGRES_DB=agri_samaj -p 127.0.0.1:5432:5432 -d postgres:17-alpine
+```
+
+The example password is for an isolated loopback development server only. Use unique credentials and `sslmode=require` for a hosted database. Set `DIRECT_URL` to the unpooled connection. Versioned SQL migrations create the schema; no reset or data-loss flags are used.
 
 ## Configuration and credentials
 
 | Variable                                      | Purpose                                                                                                                                                              |
 | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                | SQLite file on durable disk; excluded from Git.                                                                                                                      |
+| `DATABASE_URL`                                | PostgreSQL runtime connection, pooled for serverless deployments; require TLS remotely.                                                                              |
+| `DIRECT_URL`                                  | Direct PostgreSQL connection for versioned migrations; require TLS remotely.                                                                                         |
+| `BLOB_READ_WRITE_TOKEN`                       | Server-only token for a **private** Vercel Blob store. Required on Vercel; never use a `NEXT_PUBLIC_` name.                                                          |
 | `JWT_SECRET`                                  | Unique random secret of at least 32 characters. Missing, short, and retired sample secrets fail closed.                                                              |
 | `APP_URL`                                     | Exact browser origin, including scheme and development port; used for same-origin mutation checks. Use HTTPS in production.                                          |
 | `NEXT_PUBLIC_APP_URL`                         | Public URL fallback; must agree with the deployment origin.                                                                                                          |
@@ -92,28 +101,30 @@ For an authorized account reset, supply `RESET_EMAIL` and a new `RESET_PASSWORD`
 
 Environment files, databases, uploads, backups, and browser artifacts are excluded from version control. The public repository starts from a clean source snapshot; earlier local development history is not published. Never commit real credentials, member records, or verification documents.
 
-## Existing database upgrades
+## Transfer an existing SQLite installation
 
-Back up the database before any deployment. For an existing database created with `prisma db push`, first compare its schema with the baseline migration. Mark `202610160001_baseline` as applied **only after confirming an exact match**, then deploy the additive migration:
+The previous schemas and SQLite migration history are retained under `prisma/sqlite/`. The live PostgreSQL history is under `prisma/migrations/`; migration files from different providers are never mixed.
+
+1. Stop writes to SQLite, retain its upload directory, and configure a new **empty** PostgreSQL database.
+2. Run `npm run prisma:generate` and `npm run db:deploy` against PostgreSQL.
+3. Run the transfer with a private environment file containing `DATABASE_URL` and `DIRECT_URL`:
 
 ```powershell
-npx prisma migrate diff --from-url "file:./prisma/dev.db" --to-schema-datamodel prisma/baseline.prisma --exit-code
-# Continue only if the schema comparison exits 0 (no difference).
-npx prisma migrate resolve --applied 202610160001_baseline
-npm run db:deploy
-npm run db:status
+node scripts/transfer-sqlite.mjs --source prisma/dev.db --env .env.postgres.local
 ```
 
-Do not baseline a mismatched schema, run a reset, or use `db push --accept-data-loss`. Reconcile any drift with a reviewed migration. The upgrade path was checked against the local development database after taking a backup. All existing rows in its ten original tables were verified unchanged before a separate administrator credential rotation. Make and verify your own backup when upgrading another installation.
+Use Node.js 22.18+ for this operator command (`node:sqlite`). The tool opens SQLite read-only, takes a consistent backup under ignored `storage/migration/<run-id>/`, and copies the twelve application tables in relationship order within one PostgreSQL transaction. It preserves IDs, account roles, password hashes, dates, relationships, content, and rate-limit records. It compares counts and SHA-256 digests of every original field before commit, rolls back on a mismatch, and refuses any populated target table. It neither deletes nor overwrites the source or destination. Verification reports contain counts and digests; backups still contain private data and need restricted access.
 
-The security migration adds upload ownership metadata, persistent admission counters, and business/booking indexes. It does not delete or rewrite existing application records. Historical `/uploads/` files are no longer served; new uploads use `/api/files/:id`. Any legacy document URLs require a reviewed owner-to-file migration and re-upload before use; do not copy confidential files back into `public/`.
+The 16 October 2026 transfer was verified first against isolated PostgreSQL and then against the new Neon database: **35 records across 12 tables matched exactly**. No test fixtures were added to the hosted application database. Existing seeded-looking content was preserved at the user's request; its accuracy is not independently certified.
+
+Database transfer does not upload local files. This installation had zero `Upload` records and no private document/artwork references to transfer. Another installation must copy its owned files into private Blob storage and populate `Upload.blobPath` before switching hosts. Historical `/uploads/` URLs remain blocked; never restore confidential files under `public/`.
 
 ## Workflows and security behavior
 
 - Browsing and filtering approved businesses requires no account. Search is debounced and obsolete requests are cancelled. Pagination and search inputs are bounded server-side.
 - Business submissions and drafts require authentication and ownership. There is no email-based implicit account creation. Drafts persist in the database rather than shared-browser local storage. Editing an approved listing sends it back to review.
 - Public directory responses use an explicit field allowlist, exclude verification documents and internal account/review fields, and omit exact office/factory addresses when the owner marks them private. Public phone/email fields are distinct from private owner contact fields.
-- Uploads require authentication, a supported MIME type matching the file signature, a nonempty file, and a 5 MB limit. Private documents are downloadable only by their owner or an administrator. PDF downloads are attachments with a restrictive sandbox policy. File contents are not antivirus scanned.
+- Uploads require authentication, a supported MIME type matching the file signature, a nonempty file, and a 5 MB limit. On Vercel the browser uploads directly to a private Blob store using a five-minute token limited to one unique path, declared MIME type, and size. A separate authenticated completion step reads and validates the actual bytes before a file can be attached or downloaded; incomplete files remain inaccessible. This preserves the 5 MB limit despite Vercel’s 4.5 MB function request limit. Private documents are downloadable only by their owner or an administrator. PDF downloads are attachments with a restrictive sandbox policy. File contents are not antivirus scanned.
 - Booking prices are read from active database packages. A submitted transaction reference **never verifies payment**. An administrator performs manual payment review; no card charge, gateway settlement, bank reconciliation, or automatic refund is implemented.
 - Administrator changes and their audit records commit in the same database transaction. Admin screens report failed requests, prevent repeated submissions while saving, and provide keyboard-accessible dialogs.
 - Census records are aggregate counts restricted to administrators/enumerators. The server switch blocks reads and writes when disabled; it is not merely a visual notice. Household and questionnaire counts are validated. Do not place personal household data in free-text notes.
@@ -132,7 +143,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The end-to-end runner creates a new database and private upload directory under ignored `storage/e2e/<run-id>/`, applies both migrations, configures a random test administrator, starts the actual production server, and drives Chromium. Test fixtures exist only in that disposable database. It does not write to the application database or use mocked success responses. Keep the production build current before running it. `E2E_PORT` can select a free alternative to port 3107. Server logs and database evidence remain in the ignored run directory for diagnosis.
+The end-to-end runner creates a unique schema in an isolated local PostgreSQL database and a private upload directory under ignored `storage/e2e/<run-id>/`, applies the PostgreSQL migration, configures a random test administrator, starts the actual production server, and drives Chromium. Test fixtures exist only in that disposable database. It does not write to the application database or use mocked success responses. Keep the production build current before running it. `E2E_PORT` can select a free alternative to port 3107. Server logs remain in the ignored run directory for diagnosis. Start a PostgreSQL test server on `127.0.0.1:5547` with database/user `agri_test` and password `local-test-only`, or set `E2E_DATABASE_URL` to an isolated loopback PostgreSQL server. Remote test database URLs are rejected to protect hosted data.
 
 Verification as of 16 October 2026:
 
@@ -148,6 +159,8 @@ Verification as of 16 October 2026:
 | Production build                       | Passed with all production routes generated and TypeScript validation complete.                                                                                                                              |
 | Browser/API journeys and accessibility | 10 passed; 52 responsive page checks at 375/768/1280/1536px; no serious or critical axe violations on 13 public pages/account gates; no browser page or console errors during normal public-page navigation. |
 
+The PostgreSQL browser run passed all 10 journeys. An additional run using the real private Vercel Blob service passed **11 tests**, including the full 5 MB browser upload, private reads, anonymous denial, incomplete-file denial, overwrite prevention, expired-intent rejection, and forged MIME/signature rejection. Hosted-storage tests use a unique local PostgreSQL schema and remove their own uploaded objects afterward. To run them, set `E2E_BLOB_TEST=true` and supply the server-only Blob token in the process environment before `npm run test:e2e`. These checks do not create records in the production database.
+
 The successful browser run had zero skipped, unexpected, or flaky tests. It covers registration, draft resume, private uploads, approval and public search, contact resolution, booking and manual payment review, category/rate/publication management, census validation, announcements, failed login, logout, enumerator access, authorization/privacy failures, CSRF, and persistent admission. The operator password reset script was exercised against the isolated administrator. Separately, the upgraded local development database passed health, directory, rotated-admin login, protected statistics, and disabled-census read/write checks.
 
 Browser reports and desktop/mobile screenshots are in ignored `test-results/`. These screenshots contain clearly identified test fixtures from the disposable database.
@@ -155,6 +168,12 @@ Browser reports and desktop/mobile screenshots are in ignored `test-results/`. T
 The [GitHub Actions workflow](https://github.com/harshgavandit/agri-samaj-community-platform/actions/workflows/ci.yml) runs dependency installation, Prisma generation, lint, TypeScript, unit tests, dependency audit, production build, and Chromium journeys. The badge at the top shows the latest published workflow status; the table above records the local verification baseline.
 
 ## Deployment and remaining operational boundaries
+
+Vercel uses the checked-in `vercel.json` and `npm run build:vercel`. Set `DATABASE_URL`, `DIRECT_URL`, `BLOB_READ_WRITE_TOKEN`, a random `JWT_SECRET`, and the exact HTTPS `APP_URL` / `NEXT_PUBLIC_APP_URL` in the Production environment. Set `TRUST_PROXY=true` only for the trusted Vercel ingress. Keep census disabled unless specifically authorized. The build validates configuration, generates Prisma Client, applies pending additive SQL migrations, and builds Next.js. A missing private store or database stops deployment rather than falling back to ephemeral disk.
+
+Do not expose the production database to untrusted pull-request previews. Preview environments need a separate database branch and private store credentials; deployment intentionally fails when required configuration is absent. `.vercelignore` excludes secrets, SQLite files, local uploads, backups, and test evidence from CLI deployments.
+
+For a persistent single-host deployment:
 
 ```powershell
 npm ci
@@ -165,9 +184,11 @@ npm run build
 npm start
 ```
 
-Configure HTTPS, exact `APP_URL`, durable database and private-upload volumes, a trusted reverse proxy with request-size limits, and database/upload backups before exposing the site. Use `/api/health` for database-backed readiness; a failed database query returns 503. Restrict filesystem access to backups, test artifacts, and environment files. Do not deploy test fixtures or the development database.
+Configure HTTPS, exact `APP_URL`, PostgreSQL and private upload storage, a trusted reverse proxy with request-size limits, and database/upload backups before exposing the site. Use `/api/health` for database-backed readiness; a failed database query returns 503. Restrict filesystem access to backups, test artifacts, and environment files. Do not deploy test fixtures or the development database.
 
-This audit verifies local application behavior and isolated persistence, not a public production deployment. Institutional contact details, existing business listings, historical publication permissions, and current advertising rates require approval from the organization; existing seeded-looking records were preserved rather than claimed as independently verified. External PDF URL availability, email delivery, physical mobile devices, backup restoration on the deployment host, production load behavior, and production infrastructure have not been verified. Apply an appropriate upload malware-scanning and retention policy before accepting sensitive real documents at scale.
+Verified live on **16 October 2026** at [agri-samaj-community-platform.vercel.app](https://agri-samaj-community-platform.vercel.app): public HTTP 200, PostgreSQL readiness, category/directory/publication/announcement/advertisement APIs, migrated business details, administrator login and protected statistics, Secure/HttpOnly session cookies, logout, anonymous access rejection, cross-site request rejection, and security response headers. Vercel production build and SQL migration checks passed. The GitHub repository is connected for automatic main-branch deployments. No test member, business, inquiry, or payment records were created in production.
+
+Institutional contact details, existing business listings, historical publication permissions, and current advertising rates require approval from the organization; existing seeded-looking records were preserved rather than claimed as independently verified. External PDF URL availability, email delivery, physical mobile devices, backup restoration, and production load behavior have not been verified. Apply an appropriate upload malware-scanning and retention policy before accepting sensitive real documents at scale.
 
 The framework update follows the [14 October 2026 Next.js security advisory](https://nextjs.org/blog/nextjs-security-update-october-14-2026). Tailwind migration follows the [official upgrade guide](https://tailwindcss.com/docs/upgrade-guide).
 

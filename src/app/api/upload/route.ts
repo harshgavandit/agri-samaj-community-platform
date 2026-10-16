@@ -6,6 +6,16 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { put, del } from "@vercel/blob";
+
+export async function GET() {
+  try {
+    await requireAuth();
+    return NextResponse.json({ direct: !!process.env.BLOB_READ_WRITE_TOKEN });
+  } catch (error) {
+    return apiError(error);
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -35,9 +45,22 @@ export async function POST(request: Request) {
     const id = randomUUID();
     const dir =
       process.env.UPLOAD_DIR || path.join(process.cwd(), "storage", "uploads");
-    await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, id);
-    await writeFile(filePath, buffer, { flag: "wx" });
+    let blobPath: string | undefined;
+    if (process.env.BLOB_READ_WRITE_TOKEN) {
+      const blob = await put(`uploads/${user.userId}/${id}`, buffer, {
+        access: "private",
+        addRandomSuffix: false,
+        allowOverwrite: false,
+        contentType: mimeType,
+      });
+      blobPath = blob.pathname;
+    } else {
+      if (process.env.VERCEL)
+        throw new HttpError(503, "Private storage is not configured.");
+      await mkdir(dir, { recursive: true });
+      await writeFile(filePath, buffer, { flag: "wx" });
+    }
     try {
       await prisma.upload.create({
         data: {
@@ -46,10 +69,12 @@ export async function POST(request: Request) {
           name: path.basename(file.name).slice(0, 200),
           mimeType,
           size: file.size,
+          blobPath,
         },
       });
     } catch (error) {
-      await unlink(filePath);
+      if (blobPath) await del(blobPath);
+      else await unlink(filePath);
       throw error;
     }
     return NextResponse.json({

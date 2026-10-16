@@ -8,8 +8,21 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: agri_test
+          POSTGRES_PASSWORD: local-test-only
+          POSTGRES_DB: agri_test
+        ports:
+          - 5547:5432
+        options: >-
+          --health-cmd "pg_isready -U agri_test -d agri_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
     env:
-      DATABASE_URL: file:./ci.db
+      DATABASE_URL: postgresql://agri_test:local-test-only@127.0.0.1:5547/agri_test
+      DIRECT_URL: postgresql://agri_test:local-test-only@127.0.0.1:5547/agri_test
       NEXT_TELEMETRY_DISABLED: 1
     steps:
       - uses: actions/checkout@v4

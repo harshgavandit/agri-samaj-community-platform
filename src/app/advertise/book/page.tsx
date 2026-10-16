@@ -1,6 +1,7 @@
 "use client";
 import Feedback from "@/components/Feedback";
 import { apiFetch } from "@/lib/client-api";
+import { uploadFile } from "@/lib/upload-client";
 
 import { useLanguage } from "@/components/LanguageContext";
 import { formatCurrency } from "@/lib/utils";
@@ -55,15 +56,8 @@ function AdBookingForm() {
     setUploadingArtwork(true);
     setErrorMsg("");
     try {
-      const data = new FormData();
-      data.append("file", file);
-      const res = await apiFetch("/api/upload", {
-        method: "POST",
-        body: data,
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "Upload failed");
-      setFormData((prev) => ({ ...prev, artworkUrl: json.url }));
+      const uploadedUrl = await uploadFile(file);
+      setFormData((prev) => ({ ...prev, artworkUrl: uploadedUrl }));
     } catch (err: any) {
       setErrorMsg(err.message || "Artwork upload error");
     } finally {

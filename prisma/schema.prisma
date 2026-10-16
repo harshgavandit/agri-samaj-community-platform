@@ -1,54 +1,55 @@
 // Prisma schema for Agri Samaj Digital Platform
-// SQLite schema. Other providers require a reviewed provider-specific migration.
+// PostgreSQL is the application database. Legacy SQLite migrations are archived in sqlite/.
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String    @id @default(uuid())
-  email         String    @unique
-  passwordHash  String
-  name          String
-  role          String    @default("MEMBER") // ADMIN, MEMBER, ENUMERATOR
-  phone         String?
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("MEMBER") // ADMIN, MEMBER, ENUMERATOR
+  phone        String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  businesses    BusinessProfile[]
-  adBookings    AdvertisementBooking[]
-  auditLogs     AuditLog[]
-  uploads       Upload[]
+  businesses BusinessProfile[]
+  adBookings AdvertisementBooking[]
+  auditLogs  AuditLog[]
+  uploads    Upload[]
 }
 
 model BusinessCategory {
-  id             String    @id @default(uuid())
-  slug           String    @unique
-  nameMr         String
-  nameEn         String
-  descriptionMr  String?
-  descriptionEn  String?
-  icon           String?   // Lucide icon name
-  order          Int       @default(0)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  nameMr        String
+  nameEn        String
+  descriptionMr String?
+  descriptionEn String?
+  icon          String? // Lucide icon name
+  order         Int      @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  businesses     BusinessProfile[]
+  businesses BusinessProfile[]
 }
 
 model BusinessProfile {
-  id                       String            @id @default(uuid())
-  refNumber                String            @unique
-  userId                   String
-  user                     User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  status                   String            @default("PENDING") // DRAFT, PENDING, APPROVED, REJECTED, REVISION_REQUIRED
+  id        String @id @default(uuid())
+  refNumber String @unique
+  userId    String
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String @default("PENDING") // DRAFT, PENDING, APPROVED, REJECTED, REVISION_REQUIRED
 
   // Step 1: Entrepreneur Profile
   ownerName                String
@@ -59,201 +60,205 @@ model BusinessProfile {
   ownerEducationVocational String?
 
   // Step 2: Business Core Details
-  businessName             String
-  businessNameEn           String?
-  brandName                String?
-  categoryId               String
-  category                 BusinessCategory  @relation(fields: [categoryId], references: [id])
-  subCategory              String?
-  subCategoryEn            String?
-  productsServices         String
-  productsServicesEn       String?
-  description              String?
-  descriptionEn            String?
-  establishedYear          Int?
-  businessClassification   String            @default("TRADER") // MANUFACTURER, TRADER, CONTRACTOR, PROFESSIONAL, OTHER
-  ownershipType            String            @default("PROPRIETORSHIP") // PROPRIETORSHIP, PARTNERSHIP, PVT_LTD, OTHER
-  workNature               String            @default("FULL_TIME") // FULL_TIME, PART_TIME, SEASONAL, OTHER
-  startedBy                String            @default("SELF") // SELF, FAMILY, ANCESTRAL, OTHER
+  businessName           String
+  businessNameEn         String?
+  brandName              String?
+  categoryId             String
+  category               BusinessCategory @relation(fields: [categoryId], references: [id])
+  subCategory            String?
+  subCategoryEn          String?
+  productsServices       String
+  productsServicesEn     String?
+  description            String?
+  descriptionEn          String?
+  establishedYear        Int?
+  businessClassification String           @default("TRADER") // MANUFACTURER, TRADER, CONTRACTOR, PROFESSIONAL, OTHER
+  ownershipType          String           @default("PROPRIETORSHIP") // PROPRIETORSHIP, PARTNERSHIP, PVT_LTD, OTHER
+  workNature             String           @default("FULL_TIME") // FULL_TIME, PART_TIME, SEASONAL, OTHER
+  startedBy              String           @default("SELF") // SELF, FAMILY, ANCESTRAL, OTHER
 
   // Step 3: Address & Site Details
-  officeAddress            String
-  officeAddressEn          String?
-  officeCity               String
-  officeCityEn             String?
-  officeTaluka             String
-  officeTalukaEn           String?
-  officeDistrict           String
-  officeDistrictEn         String?
-  officePincode            String
-  officePhone              String?
-  factoryAddress           String?
-  factoryCity              String?
-  factoryTaluka            String?
-  factoryDistrict          String?
-  factoryPincode           String?
-  isAddressPublic          Boolean           @default(true)
+  officeAddress    String
+  officeAddressEn  String?
+  officeCity       String
+  officeCityEn     String?
+  officeTaluka     String
+  officeTalukaEn   String?
+  officeDistrict   String
+  officeDistrictEn String?
+  officePincode    String
+  officePhone      String?
+  factoryAddress   String?
+  factoryCity      String?
+  factoryTaluka    String?
+  factoryDistrict  String?
+  factoryPincode   String?
+  isAddressPublic  Boolean @default(true)
 
   // Step 4: Operational Data
-  premisesOwnership        String            @default("OWNED") // OWNED, RENTED, OTHER
-  areaSqm                  Float?
-  employeeCountFemale      Int?              @default(0)
-  employeeCountMale        Int?              @default(0)
-  employeeCountTotal       Int?              @default(0)
-  website                  String?
-  email                    String?
-  phone                    String?
+  premisesOwnership   String  @default("OWNED") // OWNED, RENTED, OTHER
+  areaSqm             Float?
+  employeeCountFemale Int?    @default(0)
+  employeeCountMale   Int?    @default(0)
+  employeeCountTotal  Int?    @default(0)
+  website             String?
+  email               String?
+  phone               String?
 
   // Step 5: Verification & Declarations
-  logoUrl                  String?
-  documentUrl              String?
-  rejectionReason          String?
-  adminNotes               String?
-  termsAccepted            Boolean           @default(false)
-  publishedAt              DateTime?
+  logoUrl         String?
+  documentUrl     String?
+  rejectionReason String?
+  adminNotes      String?
+  termsAccepted   Boolean   @default(false)
+  publishedAt     DateTime?
 
-  createdAt                DateTime          @default(now())
-  updatedAt                DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  adBookings               AdvertisementBooking[]
+  adBookings AdvertisementBooking[]
+
   @@index([status, createdAt])
   @@index([categoryId, status])
   @@index([userId, createdAt])
 }
 
 model AdvertisementPackage {
-  id             String    @id @default(uuid())
-  code           String    @unique
-  nameMr         String
-  nameEn         String
-  placementType  String    // COVER_BACK, COVER_INNER_FRONT, COVER_INNER_BACK, WELCOME_PAGE, FULL_PAGE, HALF_PAGE, QUARTER_PAGE, EIGHTH_PAGE, DIGITAL_BANNER
-  colorType      String    @default("COLOR") // COLOR, MONOCHROME
-  price          Float
-  dimensions     String
-  descriptionMr  String?
-  descriptionEn  String?
-  isActive       Boolean   @default(true)
-  order          Int       @default(0)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  code          String   @unique
+  nameMr        String
+  nameEn        String
+  placementType String // COVER_BACK, COVER_INNER_FRONT, COVER_INNER_BACK, WELCOME_PAGE, FULL_PAGE, HALF_PAGE, QUARTER_PAGE, EIGHTH_PAGE, DIGITAL_BANNER
+  colorType     String   @default("COLOR") // COLOR, MONOCHROME
+  price         Float
+  dimensions    String
+  descriptionMr String?
+  descriptionEn String?
+  isActive      Boolean  @default(true)
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  bookings       AdvertisementBooking[]
+  bookings AdvertisementBooking[]
 }
 
 model AdvertisementBooking {
-  id                 String                @id @default(uuid())
-  bookingRef         String                @unique
-  userId             String?
-  user               User?                 @relation(fields: [userId], references: [id], onDelete: SetNull)
-  businessProfileId  String?
-  businessProfile    BusinessProfile?      @relation(fields: [businessProfileId], references: [id], onDelete: SetNull)
-  packageId          String
-  package            AdvertisementPackage  @relation(fields: [packageId], references: [id])
+  id                String               @id @default(uuid())
+  bookingRef        String               @unique
+  userId            String?
+  user              User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  businessProfileId String?
+  businessProfile   BusinessProfile?     @relation(fields: [businessProfileId], references: [id], onDelete: SetNull)
+  packageId         String
+  package           AdvertisementPackage @relation(fields: [packageId], references: [id])
 
-  advertiserName     String
-  businessName       String
-  contactPerson      String
-  phone              String
-  email              String
-  address            String
-  adTextContent      String
-  artworkUrl         String?
-  amount             Float
-  paymentStatus      String                @default("PENDING") // PENDING, VERIFIED, FAILED, REFUNDED
-  paymentMethod      String                @default("NEFT_RTGS") // UPI, NEFT_RTGS, CHEQUE_DRAFT, CASH
-  paymentReference   String?
-  paymentDate        DateTime?
-  status             String                @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
-  adminRemarks       String?
+  advertiserName   String
+  businessName     String
+  contactPerson    String
+  phone            String
+  email            String
+  address          String
+  adTextContent    String
+  artworkUrl       String?
+  amount           Float
+  paymentStatus    String    @default("PENDING") // PENDING, VERIFIED, FAILED, REFUNDED
+  paymentMethod    String    @default("NEFT_RTGS") // UPI, NEFT_RTGS, CHEQUE_DRAFT, CASH
+  paymentReference String?
+  paymentDate      DateTime?
+  status           String    @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  adminRemarks     String?
 
-  createdAt          DateTime              @default(now())
-  updatedAt          DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([userId, createdAt])
   @@index([paymentStatus])
 }
 
 model Publication {
-  id             String    @id @default(uuid())
-  titleMr        String
-  titleEn        String
-  editionYear    Int
-  editionType    String    @default("DIRECTORY") // DIRECTORY, MAGAZINE_AGRI_DARPAN, REPORT, OTHER
-  descriptionMr  String?
-  descriptionEn  String?
-  coverImageUrl  String?
-  pdfUrl         String?
-  fileSize       String?
-  isPublic       Boolean   @default(true)
-  isArchived     Boolean   @default(false)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id            String   @id @default(uuid())
+  titleMr       String
+  titleEn       String
+  editionYear   Int
+  editionType   String   @default("DIRECTORY") // DIRECTORY, MAGAZINE_AGRI_DARPAN, REPORT, OTHER
+  descriptionMr String?
+  descriptionEn String?
+  coverImageUrl String?
+  pdfUrl        String?
+  fileSize      String?
+  isPublic      Boolean  @default(true)
+  isArchived    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 model Announcement {
-  id             String    @id @default(uuid())
-  titleMr        String
-  titleEn        String
-  slug           String    @unique
-  contentMr      String
-  contentEn      String
-  category       String    @default("INITIATIVE") // INITIATIVE, EVENT, NEWS, MEETING
-  eventDate      DateTime?
-  location       String?
-  isPublished    Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id          String    @id @default(uuid())
+  titleMr     String
+  titleEn     String
+  slug        String    @unique
+  contentMr   String
+  contentEn   String
+  category    String    @default("INITIATIVE") // INITIATIVE, EVENT, NEWS, MEETING
+  eventDate   DateTime?
+  location    String?
+  isPublished Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model ContactInquiry {
-  id             String    @id @default(uuid())
-  name           String
-  email          String
-  phone          String?
-  subject        String
-  message        String
-  status         String    @default("NEW") // NEW, IN_PROGRESS, RESOLVED
-  adminNotes     String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  id         String   @id @default(uuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String
+  message    String
+  status     String   @default("NEW") // NEW, IN_PROGRESS, RESOLVED
+  adminNotes String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }
 
 model AuditLog {
-  id             String    @id @default(uuid())
-  userId         String?
-  user           User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  userEmail      String?
-  action         String
-  entityType     String
-  entityId       String?
-  details        String?
-  ipAddress      String?
-  createdAt      DateTime  @default(now())
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userEmail  String?
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 }
 
 model CensusTracker {
-  id                          String    @id @default(uuid())
-  enumeratorNo                String
-  surveyorName                String
-  divisionName                String
-  taluka                      String
-  district                    String
-  state                       String    @default("महाराष्ट्र")
-  pincode                     String
-  totalHouses                 Int
-  agriHouses                  Int
-  agriPercentage              Float
-  questionnairesReceivedFrom  Int?
-  questionnairesReceivedTo    Int?
-  questionnairesUsed          Int?
-  questionnairesBlank         Int?
-  questionnairesDamaged       Int?
-  status                      String    @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED
-  notes                       String?
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime  @updatedAt
+  id                         String   @id @default(uuid())
+  enumeratorNo               String
+  surveyorName               String
+  divisionName               String
+  taluka                     String
+  district                   String
+  state                      String   @default("महाराष्ट्र")
+  pincode                    String
+  totalHouses                Int
+  agriHouses                 Int
+  agriPercentage             Float
+  questionnairesReceivedFrom Int?
+  questionnairesReceivedTo   Int?
+  questionnairesUsed         Int?
+  questionnairesBlank        Int?
+  questionnairesDamaged      Int?
+  status                     String   @default("DRAFT") // DRAFT, SUBMITTED, VERIFIED
+  notes                      String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
 }
 
 model Upload {
+  blobPath  String?  @unique
+  isReady   Boolean  @default(true)
   id        String   @id @default(uuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -261,12 +266,14 @@ model Upload {
   mimeType  String
   size      Int
   createdAt DateTime @default(now())
+
   @@index([userId])
 }
 
 model RateLimit {
-  key       String @id
+  key       String   @id
   count     Int
   expiresAt DateTime
+
   @@index([expiresAt])
 }

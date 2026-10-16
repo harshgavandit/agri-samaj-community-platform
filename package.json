@@ -15,14 +15,17 @@
     "test:e2e": "node tests/run-e2e.mjs",
     "db:deploy": "prisma migrate deploy",
     "db:status": "prisma migrate status",
-    "db:init": "node scripts/db-init.mjs",
+    "db:init": "prisma migrate deploy",
     "check:env": "node scripts/check-env.mjs",
-    "prestart": "node scripts/check-env.mjs"
+    "prestart": "node scripts/check-env.mjs",
+    "db:transfer": "node scripts/transfer-sqlite.mjs",
+    "build:vercel": "node scripts/vercel-build.mjs"
   },
   "dependencies": {
     "@fontsource/inter": "^5.3.0",
     "@fontsource/noto-sans-devanagari": "^5.3.0",
     "@prisma/client": "^5.21.1",
+    "@vercel/blob": "^2.8.2",
     "bcryptjs": "^2.4.3",
     "clsx": "^2.1.1",
     "jsonwebtoken": "^9.0.2",
@@ -53,7 +56,7 @@
     "typescript-eslint": "^8.64.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": "22.x"
   },
   "overrides": {
     "postcss": "$postcss",

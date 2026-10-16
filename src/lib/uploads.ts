@@ -11,6 +11,7 @@ export async function requireOwnedUpload(
   const file = await prisma.upload.findUnique({ where: { id } });
   if (
     !file ||
+    !file.isReady ||
     file.userId !== userId ||
     (kind === "image" && !file.mimeType.startsWith("image/"))
   )

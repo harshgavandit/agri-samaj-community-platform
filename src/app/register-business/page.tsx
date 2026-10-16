@@ -1,6 +1,7 @@
 "use client";
 import Feedback from "@/components/Feedback";
 import { apiFetch } from "@/lib/client-api";
+import { uploadFile } from "@/lib/upload-client";
 
 import { useLanguage } from "@/components/LanguageContext";
 import {
@@ -209,24 +210,13 @@ function RegisterBusinessForm() {
     setErrorMsg("");
 
     try {
-      const data = new FormData();
       if (targetField === "logoUrl" && !file.type.startsWith("image/"))
         throw new Error("Choose a JPG, PNG or WebP image for the logo.");
-      data.append("file", file);
-
-      const res = await apiFetch("/api/upload", {
-        method: "POST",
-        body: data,
-      });
-
-      const json = await res.json();
-      if (!res.ok) {
-        throw new Error(json.error || "Upload failed");
-      }
+      const uploadedUrl = await uploadFile(file);
 
       setFormData((prev) => ({
         ...prev,
-        [targetField]: json.url,
+        [targetField]: uploadedUrl,
       }));
     } catch (err: any) {
       setErrorMsg(err.message || "File upload error");

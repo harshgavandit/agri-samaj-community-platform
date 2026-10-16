@@ -1,0 +1,10 @@
+.env*
+!.env.example
+storage/
+public/uploads/
+prisma/*.db*
+prisma/sqlite/
+tests/
+test-results/
+playwright-report/
+.git/

@@ -3,15 +3,28 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
+import { del } from "@vercel/blob";
 const root = process.cwd();
 const runId = randomUUID();
 const directory = path.join(root, "storage", "e2e", runId);
 await mkdir(directory, { recursive: true });
 const port = process.env.E2E_PORT || "3107";
 const base = `http://localhost:${port}`;
+const connection = new URL(
+  process.env.E2E_DATABASE_URL ||
+    "postgresql://agri_test:local-test-only@127.0.0.1:5547/agri_test",
+);
+if (!["localhost", "127.0.0.1"].includes(connection.hostname))
+  throw new Error("Browser tests require an isolated local PostgreSQL server.");
+connection.searchParams.set("schema", `e2e_${runId.replaceAll("-", "")}`);
 const env = {
   ...process.env,
-  DATABASE_URL: `file:../storage/e2e/${runId}/test.db`,
+  DATABASE_URL: connection.href,
+  DIRECT_URL: connection.href,
+  BLOB_READ_WRITE_TOKEN:
+    process.env.E2E_BLOB_TEST === "true"
+      ? process.env.BLOB_READ_WRITE_TOKEN || ""
+      : "",
   JWT_SECRET: randomBytes(48).toString("hex"),
   ADMIN_EMAIL: "admin@example.test",
   ADMIN_PASSWORD: randomBytes(24).toString("hex"),
@@ -38,9 +51,6 @@ const run = (args) =>
         : reject(new Error(`Command failed (${code}): ${args[0]}`)),
     );
   });
-await writeFile(path.join(directory, "test.db"), new Uint8Array(), {
-  flag: "wx",
-});
 await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);
 await run(["prisma/seed.js"]);
 env.RESET_EMAIL = env.ADMIN_EMAIL;
@@ -112,6 +122,22 @@ try {
     setTimeout(resolve, 5000);
   });
   await writeFile(path.join(directory, "server.log"), logs);
+  if (env.BLOB_READ_WRITE_TOKEN) {
+    const cleanupDb = new PrismaClient({
+      datasources: { db: { url: env.DATABASE_URL } },
+    });
+    try {
+      const files = await cleanupDb.upload.findMany({
+        where: { blobPath: { not: null } },
+      });
+      for (const file of files) {
+        // Only this run's isolated local schema contains these test-owned paths.
+        await del(file.blobPath, { token: env.BLOB_READ_WRITE_TOKEN });
+      }
+    } finally {
+      await cleanupDb.$disconnect();
+    }
+  }
   console.log(`Isolated test data and server log: storage/e2e/${runId}`);
 }
 process.exitCode = result;
