@@ -42,7 +42,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </LanguageProvider>
-        <Analytics />
+        {process.env.VERCEL === "1" && <Analytics />}
       </body>
     </html>
   );

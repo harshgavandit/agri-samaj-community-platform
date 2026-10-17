@@ -135,7 +135,7 @@ Database transfer does not upload local files. This installation had zero `Uploa
 
 ### Website analytics
 
-Vercel Web Analytics is installed through `@vercel/analytics/next` and mounted once in the root layout to record visits and page views, including client-side navigation. It uses the deployment's same-origin analytics routes, which are allowed by the existing Content Security Policy. No analytics API key or custom domain is required.
+Vercel Web Analytics is installed through `@vercel/analytics/next` and mounted once in the root layout on Vercel deployments (`VERCEL=1`) to record visits and page views, including client-side navigation. It uses the deployment's same-origin analytics routes, which are allowed by the existing Content Security Policy. Local and standalone servers omit the component because Vercel supplies those routes. No analytics API key or custom domain is required.
 
 In the Vercel project dashboard, open **Analytics** and enable **Web Analytics** if it is not already enabled. Deploy the updated application, visit the live site, and navigate between pages. Check the Analytics dashboard for incoming page views; content blockers may prevent collection. Local runs do not populate the production analytics dashboard. The privacy page explains the use of this cookie-free analytics service in Marathi and English.
 
