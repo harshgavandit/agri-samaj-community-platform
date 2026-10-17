@@ -72,6 +72,17 @@ export default function PrivacyPage() {
               : "Registered entrepreneurs retain the right to update, modify, or request deletion of their business listing at any time through their member dashboard or by contacting the central office."}
           </p>
         </section>
+        <section className="space-y-2">
+          <h2 className="text-base font-bold text-navy-950 flex items-center space-x-2">
+            <ShieldCheck className="w-4 h-4 text-amber-600" />
+            <span>४. संकेतस्थळ वापराची आकडेवारी (Website Analytics)</span>
+          </h2>
+          <p>
+            {language === "mr"
+              ? "या संकेतस्थळावरील भेटी आणि पृष्ठदृश्यांची एकत्रित आकडेवारी समजून घेण्यासाठी आम्ही Vercel Web Analytics वापरतो. या विश्लेषणासाठी कुकीज वापरल्या जात नाहीत. नोंदणी अर्जातील माहिती आणि अपलोड केलेली कागदपत्रे या विश्लेषणासाठी पाठवली जात नाहीत."
+              : "We use Vercel Web Analytics to understand aggregate website visits and page views. This analytics service does not use cookies. Registration form contents and uploaded documents are not sent to this analytics service."}
+          </p>
+        </section>
       </div>
     </div>
   );

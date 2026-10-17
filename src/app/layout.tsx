@@ -1,6 +1,7 @@
 import Footer from "@/components/Footer";
 import { LanguageProvider } from "@/components/LanguageContext";
 import Navbar from "@/components/Navbar";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
 import "./globals.css";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
           </main>
           <Footer />
         </LanguageProvider>
+        <Analytics />
       </body>
     </html>
   );
