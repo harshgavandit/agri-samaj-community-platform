@@ -388,8 +388,8 @@ export default function BusinessDetailPage() {
           <span>
             {loc.isVerified
               ? language === "mr"
-                ? "परिषदेकडून पडताळणी केलेली नोंद."
-                : "Listing reviewed by the Parishad."
+                ? "या व्यासपीठाच्या प्रशासकांनी मंजूर केलेली नोंद."
+                : "This listing was approved by the platform administrator."
               : language === "mr"
                 ? "अर्ज पडताळणी अंतर्गत आहे."
                 : "This application is under review."}

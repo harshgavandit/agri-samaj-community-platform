@@ -83,8 +83,8 @@ export default function NewsEvents() {
         </h1>
         <p>
           {mr
-            ? "प्रकाशित बातम्या, आयोजकांनी जाहीर केलेले कार्यक्रम आणि मागील उपक्रमांचे संदर्भ."
-            : "Published news, organizer-announced events and references to past initiatives."}
+            ? "प्रकाशित बातम्या, कार्यक्रमांच्या सूचना आणि मागील उपक्रमांचे संदर्भ. सहभागी होण्यापूर्वी चालू तपशील आयोजकांकडून निश्चित करा."
+            : "Published news, event notices and references to past initiatives. Confirm current details with the organizer before participating."}
         </p>
       </header>
       <div
@@ -156,6 +156,13 @@ export default function NewsEvents() {
                 </p>
               )}
               <p className="news-body">{mr ? item.bodyMr : item.bodyEn}</p>
+              {!item.kind && (
+                <p className="context-note">
+                  {mr
+                    ? "या सूचनेसाठी आयोजकाचा स्रोत जोडलेला नाही. सहभागी होण्यापूर्वी तारीख, ठिकाण व नोंदणीचे चालू तपशील निश्चित करा."
+                    : "An organizer source is not attached to this announcement. Confirm the current date, venue and registration details before participating."}
+                </p>
+              )}
               {item.kind && (
                 <Link href={"/community/" + item.slug} className="text-link">
                   {mr ? "संपूर्ण माहिती व स्रोत" : "Full information & sources"}

@@ -83,7 +83,7 @@ export const translations = {
     filterOwnership: "मालकी प्रकार",
     searchButton: "शोधा",
     noResultsFound: "कोणतेही व्यावसायिक आढळले नाहीत. कृपया फिल्टर बदला.",
-    verifiedBadge: "सत्यापित उद्योजक",
+    verifiedBadge: "मंजूर नोंद",
     pendingVerification: "पडताळणी प्रक्रियेत",
     establishedIn: "स्थापना",
     classificationManufacturer: "उत्पादक (Manufacturer)",
@@ -282,7 +282,7 @@ export const translations = {
     searchButton: "Search",
     noResultsFound:
       "No businesses found matching your criteria. Try adjusting your filters.",
-    verifiedBadge: "Verified Enterprise",
+    verifiedBadge: "Approved listing",
     pendingVerification: "Verification Pending",
     establishedIn: "Est.",
     classificationManufacturer: "Manufacturer",

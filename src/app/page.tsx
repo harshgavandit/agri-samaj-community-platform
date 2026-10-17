@@ -397,6 +397,11 @@ export default function HomePage() {
               {mr ? "सर्व बातम्या व कार्यक्रम" : "All news & events"}
               <ArrowRight size={18} />
             </Link>
+            <p className="mt-4 text-sm text-[#5c6964]">
+              {mr
+                ? "प्रकाशित सूचना: नियोजन करण्यापूर्वी कार्यक्रमाचे चालू तपशील आयोजकांकडून निश्चित करा."
+                : "Published notices: confirm current event details with the organizer before making plans."}
+            </p>
           </div>
           <div>
             {announcements.length ? (

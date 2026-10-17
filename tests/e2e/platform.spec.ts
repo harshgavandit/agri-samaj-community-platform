@@ -145,6 +145,12 @@ test("member browser journey: register, save and resume a draft, upload, submit,
   await publicPage.locator(`a[href="/directory/${draft.id}"]`).click();
   await expect(
     publicPage.getByText(
+      "This listing was approved by the platform administrator.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    publicPage.getByText(
       "The exact address is private. Contact the business directly.",
     ),
   ).toBeVisible();
