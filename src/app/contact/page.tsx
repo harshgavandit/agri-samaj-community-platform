@@ -72,8 +72,8 @@ export default function ContactPage() {
         </h1>
         <p className="text-xs sm:text-sm text-slate-600">
           {language === "mr"
-            ? "अखिल आगरी समाज परिषद मध्यवर्ती व विभागीय कार्यालयांशी थेट संपर्क साधा किंवा ऑनलाइन संदेश पाठवा."
-            : "Reach out to the central and branch offices of Akhil Aagri Samaj Parishad or send an online inquiry."}
+            ? "या समुदाय व्यासपीठाच्या प्रशासकांना संदेश किंवा अभिप्राय पाठवा. खालील संस्थात्मक पत्ते जुन्या प्रकाशनातील संदर्भ आहेत; भेट देण्यापूर्वी चालू तपशील स्वतंत्रपणे निश्चित करा."
+            : "Send a message or feedback to the community platform administrators. Office references below come from historical publication material; independently confirm current details before visiting."}
         </p>
       </div>
 
@@ -102,7 +102,11 @@ export default function ContactPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>contact@agrisamaj.org</span>
+                <a href="#inquiry-form">
+                  {language === "mr"
+                    ? "संकेतस्थळाच्या टीमला संदेश पाठवा"
+                    : "Message the platform team"}
+                </a>
               </div>
             </div>
           </div>
@@ -141,8 +145,8 @@ export default function ContactPage() {
             </h3>
             <p className="text-xs text-slate-600 mt-1">
               {language === "mr"
-                ? "आपला संदेश थेट मध्यवर्ती कार्यालयाकडे पाठविला जाईल."
-                : "Our office team will review and respond promptly."}
+                ? "आपला संदेश प्रशासकांना त्यांच्या डॅशबोर्डवर पाहण्यासाठी उपलब्ध होईल."
+                : "The platform administrators can review your inquiry in their dashboard."}
             </p>
           </div>
 
@@ -151,8 +155,8 @@ export default function ContactPage() {
               <CheckCircle className="w-5 h-5 shrink-0" />
               <span>
                 {language === "mr"
-                  ? "आपला संदेश यशस्वीरीत्या प्राप्त झाला आहे! आमचे प्रतिनिधी लवकरच संपर्क करतील."
-                  : "Inquiry submitted successfully! We will get back to you shortly."}
+                  ? "आपला संदेश यशस्वीरीत्या प्राप्त झाला आहे! आपला संदेश प्रशासकांना पाहण्यासाठी उपलब्ध आहे."
+                  : "Inquiry submitted successfully! Your message is available for administrator review."}
               </span>
             </div>
           )}
@@ -164,7 +168,7 @@ export default function ContactPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form id="inquiry-form" onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <label
                 className="text-xs font-bold text-slate-700"

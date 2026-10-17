@@ -19,10 +19,18 @@ export async function GET(
     const user = await getCurrentUser();
     const publicLogo =
       file.mimeType.startsWith("image/") &&
-      (await prisma.businessProfile.findFirst({
+      ((await prisma.businessProfile.findFirst({
         where: { logoUrl: `/api/files/${id}`, status: "APPROVED" },
         select: { id: true },
-      }));
+      })) ||
+        (await prisma.communityContent.findFirst({
+          where: {
+            coverImageUrl: `/api/files/${id}`,
+            status: "PUBLISHED",
+            sourceVerified: true,
+          },
+          select: { id: true },
+        })));
     if (
       !publicLogo &&
       (!user || (user.role !== "ADMIN" && user.userId !== file.userId))

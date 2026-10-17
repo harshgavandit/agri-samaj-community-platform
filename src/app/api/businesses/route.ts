@@ -2,6 +2,7 @@ import { publicBusiness } from "@/lib/business";
 import { apiError, HttpError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,25 @@ export async function GET(request: Request) {
       district.length > 100
     )
       throw new HttpError(400, "Invalid search or pagination.");
+    const sort = searchParams.get("sort") || "recent";
+    if (
+      !["recent", "name", "oldest"].includes(sort) ||
+      category.length > 100 ||
+      (classification &&
+        ![
+          "MANUFACTURER",
+          "TRADER",
+          "CONTRACTOR",
+          "PROFESSIONAL",
+          "OTHER",
+        ].includes(classification))
+    )
+      throw new HttpError(400, "Invalid directory filter.");
     const skip = (page - 1) * limit;
 
-    const andConditions: any[] = [{ status: "APPROVED" }];
+    const andConditions: Prisma.BusinessProfileWhereInput[] = [
+      { status: "APPROVED" },
+    ];
 
     if (category) {
       andConditions.push({
@@ -38,8 +55,8 @@ export async function GET(request: Request) {
     if (district) {
       andConditions.push({
         OR: [
-          { officeDistrict: { contains: district } },
-          { officeDistrictEn: { contains: district } },
+          { officeDistrict: { contains: district, mode: "insensitive" } },
+          { officeDistrictEn: { contains: district, mode: "insensitive" } },
         ],
       });
     }
@@ -53,17 +70,17 @@ export async function GET(request: Request) {
     if (q) {
       andConditions.push({
         OR: [
-          { businessName: { contains: q } },
-          { businessNameEn: { contains: q } },
-          { brandName: { contains: q } },
-          { productsServices: { contains: q } },
-          { productsServicesEn: { contains: q } },
-          { description: { contains: q } },
-          { descriptionEn: { contains: q } },
-          { ownerName: { contains: q } },
-          { ownerNameEn: { contains: q } },
-          { officeCity: { contains: q } },
-          { officeCityEn: { contains: q } },
+          { businessName: { contains: q, mode: "insensitive" } },
+          { businessNameEn: { contains: q, mode: "insensitive" } },
+          { brandName: { contains: q, mode: "insensitive" } },
+          { productsServices: { contains: q, mode: "insensitive" } },
+          { productsServicesEn: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
+          { descriptionEn: { contains: q, mode: "insensitive" } },
+          { ownerName: { contains: q, mode: "insensitive" } },
+          { ownerNameEn: { contains: q, mode: "insensitive" } },
+          { officeCity: { contains: q, mode: "insensitive" } },
+          { officeCityEn: { contains: q, mode: "insensitive" } },
         ],
       });
     }
@@ -85,7 +102,13 @@ export async function GET(request: Request) {
             },
           },
         },
-        orderBy: { createdAt: "desc" },
+        orderBy:
+          sort === "name"
+            ? [{ businessName: "asc" }, { id: "asc" }]
+            : [
+                { createdAt: sort === "oldest" ? "asc" : "desc" },
+                { id: "asc" },
+              ],
         skip,
         take: limit,
       }),

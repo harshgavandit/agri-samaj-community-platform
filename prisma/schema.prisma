@@ -277,3 +277,48 @@ model RateLimit {
 
   @@index([expiresAt])
 }
+
+model CommunityContent {
+  id             String   @id @default(uuid())
+  slug           String   @unique
+  kind           String   @default("RESOURCE")
+  titleMr        String
+  titleEn        String
+  summaryMr      String
+  summaryEn      String
+  bodyMr         String
+  bodyEn         String
+  sources        Json     @default("[]")
+  sourceNoteMr   String   @default("")
+  sourceNoteEn   String   @default("")
+  period         String   @default("EVERGREEN")
+  status         String   @default("DRAFT")
+  sourceVerified Boolean  @default(false)
+  featured       Boolean  @default(false)
+  coverImageUrl  String?
+  coverCredit    String?
+  actionUrl      String?
+  eventAt        DateTime?
+  location       String?
+  editorNotes    String?
+  reviewedBy     String?
+  verifiedAt     DateTime?
+  revision       Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([status, kind, featured])
+}
+
+model SiteSettings {
+  id                String   @id @default("public")
+  heroTitleMr       String
+  heroTitleEn       String
+  heroDescriptionMr String
+  heroDescriptionEn String
+  noticeMr          String   @default("")
+  noticeEn          String   @default("")
+  contactEmail      String   @default("")
+  revision          Int      @default(1)
+  updatedAt         DateTime @updatedAt
+}

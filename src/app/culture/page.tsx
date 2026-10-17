@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import CommunityHub from "@/components/CommunityHub";
+export const metadata: Metadata = {
+  alternates: { canonical: "/culture" },
+  title: "संस्कृती व वारसा | Culture & Heritage | Aagri Samaj",
+  description:
+    "आगरी समाजासाठी स्रोतांसह माहिती आणि उपयुक्त साधने. Sourced community information and useful public resources.",
+};
+export default function Page() {
+  return <CommunityHub section="culture" />;
+}

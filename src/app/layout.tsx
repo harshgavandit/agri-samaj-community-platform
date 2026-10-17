@@ -3,12 +3,30 @@ import { LanguageProvider } from "@/components/LanguageContext";
 import Navbar from "@/components/Navbar";
 import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
+import { siteOrigin } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "आगरी समाज डिजिटल व्यासपीठ | Akhil Aagri Samaj Parishad",
+  metadataBase: new URL(siteOrigin()),
+  alternates: { canonical: "/" },
+  title: "आगरी समाज | संस्कृती, उद्योजकता आणि नव्या संधी | Aagri Samaj",
   description:
-    "अखिल आगरी समाज परिषद - उद्योजक व विकास मंच. उत्पादन, व्यापार, बांधकाम, आयटी व सेवा क्षेत्रातील आगरी उद्योजकांची अधिकृत डिरेक्टरी.",
+    "आगरी समाजाची संस्कृती, प्रशासक-मंजूर उद्योजक डिरेक्टरी, शिक्षण व करिअरची अधिकृत साधने आणि प्रकाशित समुदाय घडामोडी.",
+  openGraph: {
+    type: "website",
+    siteName: "Aagri Samaj Community Platform",
+    locale: "mr_IN",
+    alternateLocale: "en_IN",
+    title: "आगरी समाज · Aagri Samaj",
+    description:
+      "Heritage, enterprise and trusted resources for our community.",
+  },
+  twitter: {
+    card: "summary",
+    title: "आगरी समाज · Aagri Samaj",
+    description:
+      "Heritage, enterprise and trusted resources for our community.",
+  },
   keywords: [
     "Agri Samaj",
     "Agri Udyojak",
@@ -21,7 +39,6 @@ export const metadata: Metadata = {
     "Thane Agri Samaj",
     "Navi Mumbai Agri Entrepreneurs",
   ],
-  authors: [{ name: "अखिल आगरी समाज परिषद" }],
 };
 
 export default function RootLayout({

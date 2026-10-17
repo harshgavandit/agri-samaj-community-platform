@@ -1,3 +1,4 @@
+import { defaultSettings } from "../src/lib/community";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
@@ -205,4 +206,106 @@ test("JSON errors, size limits and error responses use safe status codes", async
 
 test("currency display preserves paise rather than rounding a quoted price", () => {
   assert(formatCurrency(1200.75).includes("1,200.75"));
+});
+
+import {
+  communitySchema,
+  publicContent,
+  settingsSchema,
+} from "../src/lib/community-validation";
+test("community publication fails closed until bilingual content and sources are verified", () => {
+  const draft = {
+    slug: "community-guide",
+    kind: "RESOURCE",
+    titleMr: "समुदाय मार्गदर्शक",
+    period: "EVERGREEN",
+    status: "DRAFT",
+  };
+  assert(communitySchema.safeParse(draft).success);
+  assert(!communitySchema.safeParse({ ...draft, status: "PUBLISHED" }).success);
+  const entry = {
+    ...draft,
+    status: "PUBLISHED",
+    titleEn: "Community guide",
+    summaryMr: "समुदायासाठी उपयुक्त माहिती आणि मार्गदर्शन.",
+    summaryEn: "Useful and carefully sourced community guidance.",
+    bodyMr:
+      "ही समुदायासाठी उपयुक्त माहिती आहे. अधिकृत संदर्भ तपासून पुढील माहिती घ्या.",
+    bodyEn:
+      "Useful guidance for the community. Check the official reference before proceeding.",
+    sources: [
+      { label: "Government reference", url: "https://www.ncs.gov.in/" },
+    ],
+    sourceVerified: true,
+  };
+  assert(communitySchema.safeParse(entry).success);
+  assert(
+    !communitySchema.safeParse({
+      ...entry,
+      sourceNoteEn: "Direct access was intermittent",
+    }).success,
+  );
+  assert(
+    !communitySchema.safeParse({ ...entry, sourceVerified: false }).success,
+  );
+  assert(
+    !communitySchema.safeParse({
+      ...entry,
+      sources: [{ label: "Unsafe", url: "javascript:alert(1)" }],
+    }).success,
+  );
+  assert(
+    !communitySchema.safeParse({
+      ...entry,
+      coverImageUrl: "/api/files/00000000-0000-4000-8000-000000000001",
+    }).success,
+  );
+  assert(!communitySchema.safeParse({ ...entry, kind: "EVENT" }).success);
+  assert(
+    communitySchema.safeParse({
+      ...entry,
+      kind: "EVENT",
+      eventAt: "2030-01-01T10:00:00Z",
+      location: "Published organizer venue",
+    }).success,
+  );
+});
+test("community projection excludes editorial identities and private notes", () => {
+  const entry = publicContent({
+    id: "id",
+    slug: "guide",
+    kind: "RESOURCE",
+    titleMr: "मार्गदर्शक",
+    titleEn: "Guide",
+    summaryMr: "माहिती",
+    summaryEn: "Information",
+    bodyMr: "प्रकाशित माहिती",
+    bodyEn: "Published information",
+    sources: [{ label: "Official", url: "https://ncs.gov.in/" }],
+    period: "EVERGREEN",
+    featured: false,
+    coverImageUrl: null,
+    coverCredit: null,
+    actionUrl: null,
+    eventAt: null,
+    location: null,
+    verifiedAt: new Date(),
+    updatedAt: new Date(),
+    editorNotes: "PRIVATE",
+    reviewedBy: "admin-private-id",
+    revision: 5,
+  });
+  assert(!("editorNotes" in entry));
+  assert(!("reviewedBy" in entry));
+  assert(!("revision" in entry));
+  assert(settingsSchema.safeParse(defaultSettings).success);
+  assert(
+    !settingsSchema.safeParse({
+      ...defaultSettings,
+      noticeEn: "Only one language",
+    }).success,
+  );
+  assert(
+    !settingsSchema.safeParse({ ...defaultSettings, revision: 0 }).success,
+  );
 });

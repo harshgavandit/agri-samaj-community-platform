@@ -7,6 +7,17 @@ import {
 import AxeBuilder from "@axe-core/playwright";
 import { PrismaClient } from "@prisma/client";
 const db = new PrismaClient();
+const testDatabase = new URL(process.env.DATABASE_URL || "http://invalid");
+if (
+  !["localhost", "127.0.0.1"].includes(testDatabase.hostname) ||
+  !testDatabase.searchParams.get("schema")?.startsWith("e2e_")
+)
+  throw new Error("Browser fixtures require an isolated local e2e schema.");
+test.beforeEach(async () => {
+  // Admission remains enabled within each journey; independent journeys must not
+  // exhaust each other's login bucket. This database is test-only, checked above.
+  await db.rateLimit.deleteMany();
+});
 const password = `Member-${process.env.E2E_RUN_ID}!`;
 const memberEmail = "journey@example.test";
 const english = async (page: Page) => {
@@ -446,63 +457,108 @@ test("all public pages and protected gates are responsive and free of serious ac
   page,
 }) => {
   test.setTimeout(240000);
-  await english(page);
   const errors: string[] = [];
   const accessibilityFindings: unknown[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   page.on("console", (message) => {
     if (message.type() === "error") errors.push(message.text());
   });
-  for (const width of [375, 768, 1280, 1536]) {
-    await page.setViewportSize({ width, height: 900 });
-    for (const route of [
-      "/",
-      "/directory",
-      "/advertise",
-      "/publications",
-      "/initiatives",
-      "/contact",
-      "/privacy",
-      "/login",
-      "/register",
-      "/register-business",
-      "/advertise/book",
-      "/dashboard",
-      "/admin",
-    ]) {
-      const response = await page.goto(route);
-      expect(response?.status(), `${route} HTTP`).toBe(200);
-      if (width === 1536) {
-        const report = await new AxeBuilder({ page })
-          .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-          .analyze();
-        accessibilityFindings.push(
-          ...report.violations
-            .filter((v) => v.impact === "serious" || v.impact === "critical")
-            .map((v) => ({
-              route,
-              id: v.id,
-              nodes: v.nodes.map((n) => ({
-                target: n.target,
-                summary: n.failureSummary,
+  await page.goto("/");
+  for (const language of ["en", "mr"]) {
+    await page.evaluate(
+      (value) => localStorage.setItem("agri_samaj_lang", value),
+      language,
+    );
+    for (const width of [375, 768, 1280, 1536]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const route of [
+        "/",
+        "/about",
+        "/culture",
+        "/resources",
+        "/news",
+        "/community/aagri-language-heritage",
+        "/community/coastal-livelihoods-historical-record",
+        "/directory",
+        "/advertise",
+        "/publications",
+        "/initiatives",
+        "/contact",
+        "/privacy",
+        "/login",
+        "/register",
+        "/register-business",
+        "/advertise/book",
+        "/dashboard",
+        "/admin",
+        "/admin/community",
+      ]) {
+        const response = await page.goto(route);
+        expect(response?.status(), `${route} HTTP`).toBe(200);
+        await expect(page.locator("html")).toHaveAttribute("lang", language);
+        await expect(page.locator(".loading-card")).toHaveCount(0);
+        await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+        if (width === 375 || width === 1536) {
+          const report = await new AxeBuilder({ page })
+            .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+            .analyze();
+          accessibilityFindings.push(
+            ...report.violations
+              .filter((v) => v.impact === "serious" || v.impact === "critical")
+              .map((v) => ({
+                route,
+                language,
+                id: v.id,
+                nodes: v.nodes.map((n) => ({
+                  target: n.target,
+                  summary: n.failureSummary,
+                })),
               })),
+          );
+        }
+        await expect(page.locator("main")).toBeVisible();
+        const overflow = await page.evaluate(() =>
+          Array.from(document.querySelectorAll("body *"))
+            .filter((element) => {
+              const box = element.getBoundingClientRect();
+              return (
+                box.width > 0 &&
+                (box.right > window.innerWidth + 1 || box.left < -1)
+              );
+            })
+            .slice(0, 12)
+            .map((element) => ({
+              tag: element.tagName,
+              className: element.className?.toString(),
+              right: element.getBoundingClientRect().right,
             })),
         );
-      }
-      await expect(page.locator("main")).toBeVisible();
-      await expect
-        .poll(
-          () =>
-            page.evaluate(
-              () =>
-                document.documentElement.scrollWidth <= window.innerWidth + 1,
-            ),
-          { message: `No overflow at ${width}: ${route}` },
+        if (
+          await page.evaluate(
+            () => document.documentElement.scrollWidth > window.innerWidth + 1,
+          )
         )
-        .toBe(true);
+          console.log(
+            "Overflow diagnostics",
+            route,
+            width,
+            JSON.stringify(overflow),
+          );
+        await expect
+          .poll(
+            () =>
+              page.evaluate(
+                () =>
+                  document.documentElement.scrollWidth <= window.innerWidth + 1,
+              ),
+            { message: `No overflow at ${width}: ${route} (${language})` },
+          )
+          .toBe(true);
+      }
     }
   }
   expect(accessibilityFindings).toEqual([]);
+  await page.evaluate(() => localStorage.setItem("agri_samaj_lang", "en"));
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/");
   await page.getByRole("button", { name: "Toggle menu" }).click();
@@ -606,4 +662,271 @@ test("persistent admission rejects repeated contact requests and security header
     if (status === 429) break;
   }
   expect(status).toBe(429);
+});
+
+test("content studio saves private drafts, verifies sources, publishes credited media, and archives safely", async ({
+  page,
+  browser,
+}) => {
+  await login(page, true);
+  await page.goto("/admin/community");
+  await page.getByRole("button", { name: "New entry", exact: true }).click();
+  await page.getByLabel("URL slug").fill("e2e-community-guide");
+  await page
+    .getByLabel("Title (Marathi)", { exact: true })
+    .fill("समुदाय चाचणी मार्गदर्शक");
+  await page
+    .getByLabel("Title (English)", { exact: true })
+    .fill("Community test guide");
+  await page
+    .getByLabel("Summary (Marathi)", { exact: true })
+    .fill("ही केवळ वेगळ्या चाचणी डेटाबेसमधील प्रकाशन प्रक्रियेची चाचणी आहे.");
+  await page
+    .getByLabel("Summary (English)", { exact: true })
+    .fill("An isolated test of the moderated community publishing workflow.");
+  await page
+    .getByLabel("Body (Marathi)", { exact: true })
+    .fill(
+      "ही स्वयंचलित चाचणीची माहिती आहे. ती प्रत्यक्ष समुदायाची घटना किंवा यशोगाथा नाही.",
+    );
+  await page
+    .getByLabel("Body (English)", { exact: true })
+    .fill(
+      'An isolated publishing test. Literal markup must remain text: <img src="x" onerror="alert(1)">.',
+    );
+  await page
+    .getByLabel("Sources: one title | HTTPS URL per line", { exact: true })
+    .fill("Government reference | https://ncs.gov.in/");
+  await page
+    .getByLabel("Internal editorial notes (private)", { exact: true })
+    .fill("INTERNAL_DO_NOT_PUBLISH");
+  await page.setViewportSize({ width: 375, height: 812 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByLabel("Cover image", { exact: true }).setInputFiles({
+    name: "owned-test.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jBQsAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+  await expect(page.locator("p.break-all")).toHaveText(/^\/api\/files\//);
+  const imageUrl = await page.locator("p.break-all").innerText();
+  await page
+    .getByLabel("Image credit & publication permission", { exact: true })
+    .fill("Synthetic test image owned by the test operator.");
+  await page.getByRole("button", { name: "Save entry", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Entry saved");
+  let saved = await db.communityContent.findUniqueOrThrow({
+    where: { slug: "e2e-community-guide" },
+  });
+  expect(saved.status).toBe("DRAFT");
+  const anonymous = await playwrightRequest.newContext({
+    baseURL: process.env.E2E_BASE_URL,
+  });
+  expect((await anonymous.get(imageUrl)).status()).toBe(403);
+  expect((await anonymous.get("/community/e2e-community-guide")).status()).toBe(
+    404,
+  );
+  expect(
+    JSON.stringify(await (await anonymous.get("/api/community")).json()),
+  ).not.toContain("INTERNAL_DO_NOT_PUBLISH");
+  await page.getByLabel("Publication status").selectOption("PUBLISHED");
+  await page.getByRole("button", { name: "Save entry", exact: true }).click();
+  await expect(page.locator(".request-notice[role=alert]")).toContainText(
+    "Verify at least one supporting source",
+  );
+  await page
+    .getByLabel(
+      "I checked the sources, the period of the information and the required publication permissions.",
+      { exact: true },
+    )
+    .check();
+  const publishRequest = page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/api/admin/community") &&
+      request.method() === "POST",
+  );
+  await page.getByRole("button", { name: "Save entry", exact: true }).click();
+  const stalePayload = (await publishRequest).postDataJSON();
+  await expect(page.getByRole("status")).toContainText("Entry saved");
+  saved = await db.communityContent.findUniqueOrThrow({
+    where: { slug: "e2e-community-guide" },
+  });
+  expect(saved.status).toBe("PUBLISHED");
+  expect((await anonymous.get(imageUrl)).status()).toBe(200);
+  const listing = (
+    await (await anonymous.get("/api/community")).json()
+  ).entries.find((entry: { slug: string }) => entry.slug === saved.slug);
+  expect(listing).toBeTruthy();
+  expect(listing.editorNotes).toBeUndefined();
+  expect(listing.reviewedBy).toBeUndefined();
+  expect(
+    (
+      await page.request.post("/api/admin/community", { data: stalePayload })
+    ).status(),
+  ).toBe(409);
+  const readerContext = await browser.newContext();
+  const reader = await readerContext.newPage();
+  await english(reader);
+  await reader.goto("/community/e2e-community-guide");
+  await expect(
+    reader.getByRole("heading", { name: "Community test guide", exact: true }),
+  ).toBeVisible();
+  await expect(reader.locator('img[src="x"]')).toHaveCount(0);
+  await expect(
+    reader.getByText("Literal markup must remain text:", { exact: false }),
+  ).toBeVisible();
+  await readerContext.close();
+  await page.getByLabel("Publication status").selectOption("ARCHIVED");
+  await page.getByRole("button", { name: "Save entry", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Entry saved");
+  expect((await anonymous.get(imageUrl)).status()).toBe(403);
+  expect((await anonymous.get("/community/e2e-community-guide")).status()).toBe(
+    404,
+  );
+  expect(
+    await db.auditLog.count({
+      where: { entityType: "CommunityContent", entityId: saved.id },
+    }),
+  ).toBe(3);
+  await anonymous.dispose();
+});
+
+test("homepage settings publish in both languages and stale or unauthorized edits are refused", async ({
+  page,
+}) => {
+  const anonymous = await playwrightRequest.newContext({
+    baseURL: process.env.E2E_BASE_URL,
+  });
+  expect((await anonymous.get("/api/admin/community")).status()).toBe(401);
+  expect(
+    (await anonymous.post("/api/admin/settings", { data: {} })).status(),
+  ).toBe(401);
+  await login(page, false);
+  expect((await page.request.get("/api/admin/community")).status()).toBe(403);
+  expect(
+    (await page.request.post("/api/admin/settings", { data: {} })).status(),
+  ).toBe(403);
+  await login(page, true);
+  const before = (await (await page.request.get("/api/admin/settings")).json())
+    .settings;
+  await page.goto("/admin/community");
+  await page
+    .getByRole("button", { name: "Homepage & settings", exact: true })
+    .click();
+  await page
+    .getByLabel("Notice (Marathi, optional)", { exact: true })
+    .fill("ही केवळ स्थानिक चाचणी सूचना आहे.");
+  await page
+    .getByLabel("Notice (English, optional)", { exact: true })
+    .fill("ISOLATED_QA_NOTICE");
+  const saveRequest = page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/api/admin/settings") &&
+      request.method() === "POST",
+  );
+  await page
+    .getByRole("button", { name: "Save settings", exact: true })
+    .click();
+  const oldPayload = (await saveRequest).postDataJSON();
+  await expect(page.getByRole("status")).toContainText(
+    "Website settings saved",
+  );
+  const published = (await (await anonymous.get("/api/site")).json()).settings;
+  expect(published.noticeEn).toBe("ISOLATED_QA_NOTICE");
+  expect(
+    (
+      await page.request.post("/api/admin/settings", { data: oldPayload })
+    ).status(),
+  ).toBe(409);
+  await page.goto("/");
+  await expect(
+    page.getByText("ISOLATED_QA_NOTICE", { exact: true }),
+  ).toBeVisible();
+  await page
+    .getByRole("button", { name: "मराठीमध्ये बदला", exact: true })
+    .click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "mr");
+  await expect(
+    page.getByText("ही केवळ स्थानिक चाचणी सूचना आहे.", { exact: true }),
+  ).toBeVisible();
+  const restore = await page.request.post("/api/admin/settings", {
+    data: { ...before, revision: published.revision },
+  });
+  expect(restore.ok()).toBe(true);
+  await anonymous.dispose();
+});
+
+test("official resources, case-insensitive directory links, metadata and public-only sitemap work", async ({
+  page,
+}) => {
+  await english(page);
+  await page.goto("/resources");
+  await page
+    .getByRole("searchbox", { name: "Search community resources", exact: true })
+    .fill("scholarship");
+  await expect(page.getByRole("status")).toContainText("2 entries");
+  await page
+    .getByRole("link", { name: "National Scholarship Portal", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "National Scholarship Portal",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Visit the official website/ }),
+  ).toHaveAttribute("href", "https://scholarships.gov.in/Students");
+  await page.goto("/directory?q=browser%20verified&sort=name");
+  await expect(
+    page.getByRole("heading", {
+      name: "Browser Verified Workshop",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: "Sort by", exact: true }),
+  ).toHaveValue("name");
+  await expect(page).toHaveURL(/sort=name/);
+  const insensitive = await (
+    await page.request.get("/api/businesses?q=browser%20verified")
+  ).json();
+  expect(insensitive.businesses.length).toBeGreaterThan(0);
+  expect((await page.request.get("/api/businesses?sort=bad")).status()).toBe(
+    400,
+  );
+  expect((await page.request.get("/api/community?kind=bad")).status()).toBe(
+    400,
+  );
+  const robots = await page.request.get("/robots.txt");
+  expect(robots.ok()).toBe(true);
+  expect(await robots.text()).toContain("Disallow: /admin");
+  const sitemap = await page.request.get("/sitemap.xml");
+  expect(sitemap.ok()).toBe(true);
+  const xml = await sitemap.text();
+  expect(xml).toContain("/community/aagri-language-heritage");
+  expect(xml).not.toContain("/community/e2e-community-guide");
+  expect(xml).not.toContain("/api/files/");
+  expect(xml).not.toContain("/dashboard");
+  await page.goto("/login");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+  for (const route of ["/register-business", "/advertise/book"]) {
+    await page.goto(route);
+    await expect(
+      page.getByRole("heading", {
+        name: "Please sign in to continue",
+        exact: true,
+      }),
+    ).toBeVisible();
+  }
 });

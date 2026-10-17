@@ -19,15 +19,37 @@ The platform references the history and programs of Akhil Aagri Samaj Parishad. 
 
 ## What the platform does
 
-| For                      | Available features                                                                                                                                                                      |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Community members        | Browse approved businesses without an account; search and filter by business category, location, and classification; read publications and announcements; contact the community office. |
-| Entrepreneurs            | Create an account, register a business through a five-step application, save and resume drafts, upload private verification documents, and track application or advertisement status.   |
-| Community administrators | Review business applications, request revisions, manage categories and advertisement rates, review payments manually, maintain publications and announcements, and resolve inquiries.   |
-| Authorized survey teams  | Use an optional restricted census tracker for aggregate household and questionnaire counts. The module is disabled by default.                                                          |
-| Contributors             | Improve the interface, Marathi and English wording, accessibility, security, documentation, and automated tests through issues and pull requests.                                       |
+| For                      | Available features                                                                                                                                                                        |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Community members        | Browse approved businesses without an account; search and filter by business category, location, and classification; read publications and announcements; use the community inquiry form. |
+| Entrepreneurs            | Create an account, register a business through a five-step application, save and resume drafts, upload private verification documents, and track application or advertisement status.     |
+| Community administrators | Review business applications, request revisions, manage categories and advertisement rates, review payments manually, maintain publications and announcements, and resolve inquiries.     |
+| Authorized survey teams  | Use an optional restricted census tracker for aggregate household and questionnaire counts. The module is disabled by default.                                                            |
+| Contributors             | Improve the interface, Marathi and English wording, accessibility, security, documentation, and automated tests through issues and pull requests.                                         |
 
 This is a working full-stack application: forms persist to a relational database, access checks run on the server, and administrative actions are auditable. New installations start without fabricated businesses, events, publications, or advertising rates.
+
+## Community content and publishing
+
+The 18 October 2026 enhancement adds a Marathi-first homepage with an original coastal SVG illustration, a consistent deep-green and warm-paper visual identity, responsive navigation, searchable community resources, dated news/event views, accessible FAQs, and clearer links between community information and the entrepreneur directory. The illustration is original code; no unlicensed community photography or invented audience figures are used.
+
+- `/about` introduces community identity and sourced organizational information; `/culture` distinguishes language heritage from historical records.
+- `/resources` groups education, scholarships, skills, employment and entrepreneurship references with searchable bilingual summaries. Links lead to the responsible official portal; the platform does not promise eligibility, open applications, benefits or employment.
+- `/news` separates upcoming and past dated events and includes published announcements. `/initiatives` supports reviewed initiatives, organizational information and verified achievements. There are no fabricated events, people, testimonials, achievements or registration forms for nonexistent events.
+- `/community/[slug]` shows the full bilingual article, sources, review date, historical context, image credit and any source-access limitation. Corrections and proposed contributions use the working inquiry form.
+- Directory searches are case-insensitive, support recent/name/oldest sorting, and preserve filters and page state in shareable URLs. Existing registration, draft editing, private documents and approval workflows remain in place.
+
+Administrators open **Content & website** in the administrator navigation (`/admin/community`). The content tab manages About, Culture, Organizations, Education, Resources, Achievements, Initiatives, Events and News. Save incomplete work as **Draft**, complete both languages before **For review**, explicitly verify at least one supporting source before **Published**, and use **Archived** to remove an entry from public pages. Published events also require a date/time and location. Source review notes are public and bilingual; internal editorial notes and reviewer identities remain private. Body text renders as escaped text rather than executable HTML.
+
+Editorial cover images use the existing private upload pipeline and require an administrator upload plus a credit/permission statement. A draft or archived article does not grant anonymous image access. Administrators must own the image or obtain permission; the application records the credit and review acknowledgement but cannot independently establish copyright ownership. PDFs retain their existing private-document rules. Existing publication, business, category, advertisement, payment-review, announcement and inquiry screens remain available.
+
+The **Homepage & settings** tab edits both hero titles/descriptions, a bilingual public notice and an optional public contact email. An empty contact email hides the direct email link while keeping the inquiry form available. Content and settings changes use server-side administrator checks, input validation, database-backed admission limits, revision checks that refuse stale overwrites, and audit records committed with the change.
+
+Two additive migrations introduce `CommunityContent` and `SiteSettings`, twelve curated bilingual reference articles, and public source-provenance notes. They preserve existing application records. References include Marathi Vishwakosh, the historical Thana/Kolaba gazetteers, the Maharashtra Aagri economic development corporation and its government resolution, MahaDBT, the National Scholarship Portal, National Career Service, Skill India, Mahaswayam, SWAYAM, Udyam and Startup India. Historical gazetteer material is explicitly qualified and is not used as evidence of present-day occupations or population. Three heritage articles disclose that official indexed text was checked but direct page access was intermittent. Portal availability and current application notices must be checked with the linked authority; MahaDBT was under maintenance during this review.
+
+The public library currently returns the latest 100 published, source-verified entries; the administrator list returns the latest 200 entries. Introduce paginated content browsing before those limits are approached. Community-specific achievements, contemporary cultural accounts, approved photographs and actual future events still need community-provided evidence and publication permission.
+
+Public routes have page metadata and canonical URLs. `/sitemap.xml` contains public pages, approved businesses and published verified articles; `/robots.txt` and noindex metadata keep account/admin routes out of indexing guidance. Authentication remains the security boundary. Google Search Console ownership and sitemap submission remain deferred until the intended domain and Google account are available; no domain ownership or indexing is claimed.
 
 ## Architecture
 
@@ -46,8 +68,8 @@ flowchart LR
 - Next.js 15.5.28 App Router, React 19, TypeScript, Tailwind CSS 4, and locally bundled Inter / Noto Sans Devanagari fonts.
 - Prisma 5 with **PostgreSQL**, versioned SQL migrations, database-backed rate limits, and audit logs.
 - JWT sessions in HttpOnly cookies; authorization checks use the current active database account and role.
-- Private Vercel Blob storage on Vercel; private disk storage for a single local host. Documents require authenticated access; image logos become public only after business approval.
-- Node.js 22 or newer. Tailwind 4 targets modern browsers: Chrome 111+, Safari 16.4+, and Firefox 128+.
+- Private Vercel Blob storage on Vercel; private disk storage for a single local host. Documents require authenticated access; image logos become public only after business approval, and administrator-uploaded editorial images only while their verified article is published.
+- Node.js 22.x (the supported production and CI runtime). Tailwind 4 targets modern browsers: Chrome 111+, Safari 16.4+, and Firefox 128+.
 
 The application uses PostgreSQL with a pooled runtime connection and a direct migration connection. The Vercel deployment uses Neon PostgreSQL and a **private** Vercel Blob store in Singapore. The original SQLite database and SQL migrations remain available locally for backup and transfer; SQLite is no longer the application runtime.
 
@@ -153,7 +175,21 @@ npm run test:e2e
 
 The end-to-end runner creates a unique schema in an isolated local PostgreSQL database and a private upload directory under ignored `storage/e2e/<run-id>/`, applies the PostgreSQL migration, configures a random test administrator, starts the actual production server, and drives Chromium. Test fixtures exist only in that disposable database. It does not write to the application database or use mocked success responses. Keep the production build current before running it. `E2E_PORT` can select a free alternative to port 3107. Server logs remain in the ignored run directory for diagnosis. Start a PostgreSQL test server on `127.0.0.1:5547` with database/user `agri_test` and password `local-test-only`, or set `E2E_DATABASE_URL` to an isolated loopback PostgreSQL server. Remote test database URLs are rejected to protect hosted data.
 
-Verification as of 16 October 2026:
+Current enhancement verification, **18 October 2026**:
+
+| Check                               | Result                                                                                                                                                                                                                                                             |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lint and TypeScript                 | Passed; zero lint warnings.                                                                                                                                                                                                                                        |
+| Unit tests                          | 17 passed, including bilingual publication requirements, safe source URLs, credited media and private editorial field exclusion.                                                                                                                                   |
+| Dependency audit                    | Zero known vulnerabilities.                                                                                                                                                                                                                                        |
+| Production build                    | Passed; homepage first-load JavaScript is 135 kB. No new dependency was added for this enhancement.                                                                                                                                                                |
+| Additive migrations                 | All three migrations applied to a fresh disposable schema; upgraded QA database matches Prisma with no schema difference.                                                                                                                                          |
+| Browser/API journeys                | 13 passed, including all existing journeys plus content draft/review/publication/archive, private-to-public media access, stale revision conflicts, homepage settings, resource filtering and SEO/privacy checks.                                                  |
+| Responsive and accessibility checks | 160 page/width/language combinations across 20 public routes/account gates, four widths (375/768/1280/1536 px), and Marathi/English. 80 axe scans at 375 and 1536 px found no serious or critical violations. No normal-navigation browser page or console errors. |
+
+These enhancement write journeys used isolated local PostgreSQL schemas and private disk uploads. They do not certify physical devices, production load, third-party portal uptime or the legal accuracy of future administrator submissions. The earlier private Vercel Blob run below is separately dated; it was not repeated in this enhancement run.
+
+Earlier verification baseline, recorded on 16 October 2026:
 
 | Check                                  | Result                                                                                                                                                                                                       |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

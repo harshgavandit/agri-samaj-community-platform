@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 import AccessGate from "@/components/AccessGate";
 import { Suspense } from "react";
 export default function DashboardLayout({

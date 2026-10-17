@@ -33,7 +33,10 @@ function DirectoryContent() {
   const [selectedClassification, setSelectedClassification] = useState(
     searchParams.get("classification") || "",
   );
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(
+    Math.max(1, Number(searchParams.get("page")) || 1),
+  );
+  const [sort, setSort] = useState(searchParams.get("sort") || "recent");
 
   // Load categories
   useEffect(() => {
@@ -50,7 +53,8 @@ function DirectoryContent() {
     setSelectedCategory(searchParams.get("category") || "");
     setSelectedDistrict(searchParams.get("district") || "");
     setSelectedClassification(searchParams.get("classification") || "");
-    setPage(1);
+    setSort(searchParams.get("sort") || "recent");
+    setPage(Math.max(1, Number(searchParams.get("page")) || 1));
   }, [searchParams]);
 
   // Fetch businesses when filters change
@@ -67,6 +71,15 @@ function DirectoryContent() {
         if (selectedClassification)
           params.set("classification", selectedClassification);
         params.set("page", page.toString());
+        params.set("sort", sort);
+        const shared = new URLSearchParams(params);
+        if (page === 1) shared.delete("page");
+        if (sort === "recent") shared.delete("sort");
+        window.history.replaceState(
+          window.history.state,
+          "",
+          "/directory" + (shared.size ? "?" + shared.toString() : ""),
+        );
         params.set("limit", "12");
 
         const res = await apiFetch(`/api/businesses?${params.toString()}`, {
@@ -100,6 +113,7 @@ function DirectoryContent() {
     selectedCategory,
     selectedDistrict,
     selectedClassification,
+    sort,
     page,
   ]);
 
@@ -108,11 +122,15 @@ function DirectoryContent() {
     setSelectedCategory("");
     setSelectedDistrict("");
     setSelectedClassification("");
+    setSort("recent");
     setPage(1);
   };
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
+    <div
+      aria-busy={loading}
+      className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4"
+    >
       <Feedback message={requestError} />
       {/* Page Header */}
       <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-1">
@@ -123,7 +141,7 @@ function DirectoryContent() {
           {t.directorySubtitle} -{" "}
           {language === "mr"
             ? "उत्पादक, व्यापारी, कंत्राटदार आणि व्यावसायिक सेवांची पडताळणी केलेली यादी."
-            : "Official directory of verified manufacturers, traders, contractors, and professionals."}
+            : "Administrator-approved manufacturers, traders, contractors and professionals. Filters are saved in the page address for sharing."}
         </p>
       </div>
 
@@ -136,6 +154,7 @@ function DirectoryContent() {
             <input
               aria-label={t.searchPlaceholder}
               type="search"
+              maxLength={200}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
@@ -242,6 +261,38 @@ function DirectoryContent() {
         )}
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <p role="status" aria-live="polite">
+          {loading
+            ? language === "mr"
+              ? "शोधत आहोत…"
+              : "Searching…"
+            : pagination.total +
+              (language === "mr" ? " व्यवसाय" : " businesses")}
+        </p>
+        <label className="flex items-center gap-3">
+          {language === "mr" ? "क्रमवारी" : "Sort by"}
+          <select
+            aria-label={language === "mr" ? "क्रमवारी" : "Sort by"}
+            value={sort}
+            onChange={(event) => {
+              setSort(event.target.value);
+              setPage(1);
+            }}
+            className="px-3 py-2 border rounded-lg bg-white"
+          >
+            <option value="recent">
+              {language === "mr" ? "नवीन प्रथम" : "Newest first"}
+            </option>
+            <option value="name">
+              {language === "mr" ? "व्यवसायाच्या नावानुसार" : "Business name"}
+            </option>
+            <option value="oldest">
+              {language === "mr" ? "जुने प्रथम" : "Oldest first"}
+            </option>
+          </select>
+        </label>
+      </div>
       {/* Results Grid */}
       {loading ? (
         <div className="py-12 text-center space-y-2">

@@ -68,7 +68,7 @@ export const translations = {
       '२००६ व २०१२ ची आगरी उद्योजक पुस्तिका तसेच "आगरी दर्पण" चे ऐतिहासिक संग्रह',
     sectionAdsTitle: "जाहिरात व प्रसिद्धीच्या संधी",
     sectionAdsSubtitle:
-      "हजारो कुटुंबे व व्यावसायिकांपर्यंत आपल्या ब्रँडची ओळख पोहोचवा",
+      "प्रकाशित जाहिरात पर्यायांमधून आपल्या व्यवसायाची माहिती द्या",
     sectionInitiativesTitle: "सामाजिक व आर्थिक उपक्रम",
     sectionInitiativesSubtitle:
       "जनगणना मोहीम, युवक रोजगार, विधी सल्ला आणि उद्योजक मेळावे",
@@ -76,7 +76,7 @@ export const translations = {
     // Directory
     directoryTitle: "आगरी व्यावसायिक डिरेक्टरी",
     directorySubtitle:
-      "अखिल आगरी समाज परिषदेअंतर्गत नोंदणीकृत व पडताळणी झालेले व्यावसायिक",
+      "या समुदाय व्यासपीठावर प्रशासकांनी मंजूर केलेल्या व्यवसाय नोंदी",
     filterCategory: "उद्योग श्रेणी",
     filterDistrict: "जिल्हा",
     filterClassification: "व्यवसाय स्वरूप",
@@ -168,7 +168,7 @@ export const translations = {
     adPrice: "दर (रुपये)",
     bookThisAd: "हे पॅकेज निवडा",
     offlinePaymentNote:
-      'नोंद: चेक किंवा NEFT/RTGS/UPI द्वारे "अखिल आगरी समाज परिषद - उद्योजक विभाग" कडे देयक जमा करता येईल.',
+      "देयक करण्यापूर्वी व्यासपीठाच्या प्रशासकांकडून चालू देयक सूचना निश्चित करा. व्यवहाराचा संदर्भ दिल्याने देयकाची पडताळणी पूर्ण होत नाही.",
 
     // Publications
     publicationsTitle: "डिजिटल ग्रंथालय व मासिक संग्रह",
@@ -178,12 +178,12 @@ export const translations = {
     viewArchive: "संग्रह पहा",
 
     // Offices & Contact
-    contactTitle: "संपर्क व मध्यवर्ती कार्यालये",
-    panvelOfficeTitle: "मध्यवर्ती कार्यालय (Panvel)",
+    contactTitle: "संपर्क व अभिप्राय",
+    panvelOfficeTitle: "जुन्या प्रकाशनातील संदर्भ (पनवेल)",
     panvelAddress:
       "द्वारा पनवेल - उरण आगरी समाज मंडळ, आगरी समाज मंडळ मार्ग, पनवेल, जि. रायगड, पिन कोड ४१० २०६.",
     panvelPhone: "०२२-२७४५६२७८ / ९४२२१९९००७",
-    trombayOfficeTitle: "विभागीय / संपर्क कार्यालय (Trombay, Mumbai)",
+    trombayOfficeTitle: "जुन्या प्रकाशनातील संदर्भ (ट्रॉम्बे, मुंबई)",
     trombayAddress: '"ताराबाई निवास", पावलीपाडा, ट्रॉम्बे, मुंबई - ४०० ०८८.',
     trombayPhone: "०२२-२५५६२१९२ / ९३२४२९५७५२ / ९२२१६१७०३७",
     emailContact: "ईमेल",
@@ -266,7 +266,7 @@ export const translations = {
       "Preserving the 2006 and 2012 editions of Agri Udyojak Pustika and Agri Darpan journal",
     sectionAdsTitle: "Advertising & Brand Sponsorship",
     sectionAdsSubtitle:
-      "Reach thousands of households and high-intent commercial buyers across Maharashtra",
+      "Explore published advertising options for your business",
     sectionInitiativesTitle: "Community & Economic Initiatives",
     sectionInitiativesSubtitle:
       "Demographic research, youth incubation, legal aid, and industrial conventions",
@@ -274,7 +274,7 @@ export const translations = {
     // Directory
     directoryTitle: "Agri Business Directory",
     directorySubtitle:
-      "Verified entrepreneurs and enterprises registered with Akhil Aagri Samaj Parishad",
+      "Administrator-approved community entrepreneurs and enterprises",
     filterCategory: "Industry Category",
     filterDistrict: "District",
     filterClassification: "Business Nature",
@@ -354,14 +354,14 @@ export const translations = {
     documentUploadLabel:
       "Verification Document (Udyam, GST, Shop Act, or Visiting Card)",
     termsAcceptance:
-      "I hereby declare that all provided details are true and I consent to publication in the official Agri Samaj Business Directory.",
+      "I declare that the information provided is true and consent to publication in the moderated Aagri Samaj community business directory.",
     submissionSuccess:
       "Your application has been received successfully! Reference Code:",
     submissionReviewNote:
       "Your business profile will be activated after administrative review.",
 
     // Advertisements
-    adsRateCardTitle: "Official Advertisement & Sponsorship Rate Card",
+    adsRateCardTitle: "Published Advertisement & Sponsorship Rate Card",
     adsRateCardSubtitle:
       "Bridging historical community legacy with high-impact modern digital placements",
     adPackage: "Advertisement Package",
@@ -369,7 +369,7 @@ export const translations = {
     adPrice: "Rate (INR)",
     bookThisAd: "Select This Package",
     offlinePaymentNote:
-      'Note: Cheque, NEFT/RTGS, or UPI payments are payable to "Akhil Aagri Samaj Parishad - Entrepreneur Wing".',
+      "Confirm current payment instructions with the platform administrators before paying. A transaction reference is not a verified payment.",
 
     // Publications
     publicationsTitle: "Digital Library & Publications Archive",
@@ -379,12 +379,12 @@ export const translations = {
     viewArchive: "View Edition",
 
     // Offices & Contact
-    contactTitle: "Contact & Registered Offices",
-    panvelOfficeTitle: "Central Office (Panvel)",
+    contactTitle: "Contact & Feedback",
+    panvelOfficeTitle: "Historical office reference (Panvel)",
     panvelAddress:
       "C/o Panvel - Uran Agri Samaj Mandal, Agri Samaj Mandal Marg, Panvel, Dist. Raigad - 410206.",
     panvelPhone: "022-27456278 / 9422199007",
-    trombayOfficeTitle: "Branch / Contact Office (Trombay, Mumbai)",
+    trombayOfficeTitle: "Historical office reference (Trombay, Mumbai)",
     trombayAddress: '"Tarabai Nivas", Pavlipada, Trombay, Mumbai - 400088.',
     trombayPhone: "022-25562192 / 9324295752 / 9221617037",
     emailContact: "Email",

@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { robots: { index: false, follow: false } };
 import AccessGate from "@/components/AccessGate";
+import AdminNavigation from "@/components/AdminNavigation";
 import { Suspense } from "react";
 export default function AdminLayout({
   children,
@@ -13,7 +16,10 @@ export default function AdminLayout({
         </p>
       }
     >
-      <AccessGate roles={["ADMIN"]}>{children}</AccessGate>
+      <AccessGate roles={["ADMIN"]}>
+        <AdminNavigation />
+        {children}
+      </AccessGate>
     </Suspense>
   );
 }

@@ -53,8 +53,8 @@ export default function AdvertisePage() {
         <p className="text-slate-300 text-xs sm:text-sm max-w-3xl leading-relaxed">
           {t.adsRateCardSubtitle} -{" "}
           {language === "mr"
-            ? 'आगरी उद्योजक डिजिटल व्यासपीठ, आगामी छापील आवृत्ती आणि "आगरी दर्पण" द्वारे ५०००+ व्यावसायिक व संस्थांपर्यंत पोहोच.'
-            : "Gain prime exposure across digital directories, community publications, and the upcoming print directory."}
+            ? "प्रकाशित पॅकेज, आकार आणि दर पाहून आपल्या व्यवसायासाठी योग्य पर्याय निवडा."
+            : "Compare published packages, dimensions and prices to choose a suitable option for your business."}
         </p>
       </div>
 
@@ -65,12 +65,12 @@ export default function AdvertisePage() {
           <strong>
             {language === "mr"
               ? "महत्त्वाची प्रशासकीय नोंद:"
-              : "Official Administrative Notice:"}
+              : "Booking information:"}
           </strong>
           <p className="leading-relaxed text-xs">
             {language === "mr"
-              ? "२००६ व २०१२ च्या छापील पुस्तिकेतील दर ऐतिहासिक संदर्भ म्हणून जतन केले असून खालील दर हे चालू डिजिटल व आगामी आवृत्तीसाठी प्रशासकीय मान्यताप्राप्त सुधारित दर आहेत."
-              : "Rates printed in the historical 2012 documents serve as heritage references. The current packages listed below represent approved rates for the digital network and forthcoming editions."}
+              ? "या व्यासपीठाचे प्रशासक उपलब्ध पॅकेज आणि दर प्रकाशित करतात. अर्ज व देयकाची तपासणी स्वतंत्रपणे केली जाते. व्यवहाराचा संदर्भ क्रमांक दिल्याने देयकाची पडताळणी पूर्ण होत नाही."
+              : "Platform administrators publish available packages and prices. Applications and payments are reviewed separately. Providing a transaction reference does not verify payment."}
           </p>
         </div>
       </div>

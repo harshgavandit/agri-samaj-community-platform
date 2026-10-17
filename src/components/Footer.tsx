@@ -1,191 +1,115 @@
 "use client";
-
-import { Building2, Mail, MapPin, Phone, ShieldAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ArrowUpRight, Mail } from "lucide-react";
 import { useLanguage } from "./LanguageContext";
-
 export default function Footer() {
-  const { language, t } = useLanguage();
-
+  const { language } = useLanguage();
+  const mr = language === "mr";
+  const [contactEmail, setContactEmail] = useState("");
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/site", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data?.settings?.contactEmail)
+          setContactEmail(data.settings.contactEmail);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   return (
-    <footer className="bg-navy-950 text-slate-300 mt-auto border-t-4 border-amber-600">
-      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Col 1: Identity & Legal Reg */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-lg bg-navy-900 border border-amber-500 flex items-center justify-center text-white">
-                <Building2 className="w-5 h-5 text-amber-400" />
-              </div>
-              <div>
-                <span className="font-bold text-white text-base block leading-tight">
-                  {language === "mr"
-                    ? "अखिल आगरी समाज परिषद"
-                    : "Akhil Aagri Samaj Parishad"}
-                </span>
-                <span className="text-xs text-amber-400">
-                  {language === "mr"
-                    ? "उद्योजक व विकास विभाग"
-                    : "Entrepreneur & Development Wing"}
-                </span>
-              </div>
-            </div>
-
-            <p className="text-xs text-slate-400 leading-relaxed">
-              {language === "mr"
-                ? "आगरी समाजातील सर्व व्यावसायिक, उत्पादक, तंत्रज्ञ आणि कंत्राटदारांचे परस्परांशी व्यावसायिक संघटन घडवून आणणारा अधिकृत डिजिटल मंच."
-                : "The official digital platform fostering commercial collaboration among Agri community entrepreneurs, manufacturers, contractors, and professionals."}
-            </p>
-
-            <div className="text-[11px] bg-navy-900 p-2.5 rounded border border-navy-800 text-slate-400 space-y-1">
-              <div>
-                <strong className="text-slate-300">
-                  {language === "mr" ? "पब्लिक ट्रस्ट:" : "Public Trust:"}
-                </strong>{" "}
-                {language === "mr"
-                  ? "एफ १६२५७ (मुंबई) १९९३"
-                  : "F-16257 (Mumbai) 1993"}
-              </div>
-              <div>
-                <strong className="text-slate-300">
-                  {language === "mr" ? "सोसायटी ॲक्ट:" : "Society Act:"}
-                </strong>{" "}
-                {language === "mr"
-                  ? "जी.बी.बी.एस.डी. ८०६ (मुंबई) १९९३"
-                  : "G.B.B.S.D. 806 (Mumbai) 1993"}
-              </div>
-            </div>
-          </div>
-
-          {/* Col 2: Quick Links */}
+    <footer className="community-footer">
+      <div className="footer-inner">
+        <div className="footer-columns">
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-400 mb-4">
-              {language === "mr" ? "महत्त्वाचे दुवे" : "Quick Links"}
-            </h3>
-            <ul className="space-y-2 text-sm text-slate-400">
-              <li>
-                <Link href="/directory" className="hover:text-white transition">
-                  {t.navDirectory}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/register-business"
-                  className="hover:text-amber-400 transition font-medium text-amber-300"
-                >
-                  {t.navRegisterBusiness}
-                </Link>
-              </li>
-              <li>
-                <Link href="/advertise" className="hover:text-white transition">
-                  {t.navAdvertising}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/publications"
-                  className="hover:text-white transition"
-                >
-                  {t.navPublications}
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/initiatives"
-                  className="hover:text-white transition"
-                >
-                  {t.navInitiatives}
-                </Link>
-              </li>
-              <li>
-                <Link href="/privacy" className="hover:text-white transition">
-                  {language === "mr"
-                    ? "गोपनीयता धोरण व अटी"
-                    : "Privacy Policy & Terms"}
-                </Link>
-              </li>
+            <Link className="brand-name" href="/">
+              {mr ? "आगरी समाज" : "Aagri Samaj"}
+            </Link>
+            <p>
+              {mr
+                ? "आपली संस्कृती जपणारे, उद्योजकांना जोडणारे आणि पुढच्या पिढीसाठी उपयुक्त माहिती एकत्र आणणारे समुदाय व्यासपीठ."
+                : "A community platform celebrating our heritage, connecting entrepreneurs and bringing useful information to the next generation."}
+            </p>
+            <span className="eyebrow">
+              {mr ? "एकत्र, पुढे." : "FORWARD, TOGETHER."}
+            </span>
+          </div>
+          <div>
+            <h2>{mr ? "आपला समुदाय" : "Our community"}</h2>
+            <ul>
+              {[
+                ["/about", "आपला समाज", "About the community"],
+                ["/culture", "संस्कृती व वारसा", "Culture & heritage"],
+                ["/news", "बातम्या व कार्यक्रम", "News & events"],
+                ["/initiatives", "उपक्रम", "Initiatives"],
+                ["/publications", "डिजिटल प्रकाशने", "Digital publications"],
+              ].map(([url, a, b]) => (
+                <li key={url}>
+                  <Link href={url}>{mr ? a : b}</Link>
+                </li>
+              ))}
             </ul>
           </div>
-
-          {/* Col 3: Central Office (Panvel) */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-400 mb-4">
-              {t.panvelOfficeTitle}
-            </h3>
-            <div className="space-y-2 text-xs text-slate-400">
-              <div className="flex items-start space-x-2">
-                <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <span>{t.panvelAddress}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>{t.panvelPhone}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Mail className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>contact@agrisamaj.org</span>
-              </div>
-            </div>
+            <h2>{mr ? "उपयुक्त दुवे" : "Useful links"}</h2>
+            <ul>
+              {[
+                ["/directory", "उद्योजक डिरेक्टरी", "Business Directory"],
+                ["/register-business", "व्यवसाय नोंदणी", "Register Business"],
+                ["/resources", "शिक्षण व साधने", "Education & resources"],
+                [
+                  "/advertise",
+                  "जाहिरात व प्रायोजकत्व",
+                  "Advertising & Sponsorship",
+                ],
+                ["/dashboard", "माझे खाते", "My dashboard"],
+              ].map(([url, a, b]) => (
+                <li key={url}>
+                  <Link href={url}>{mr ? a : b}</Link>
+                </li>
+              ))}
+            </ul>
           </div>
-
-          {/* Col 4: Branch Office (Trombay, Mumbai) */}
           <div>
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-amber-400 mb-4">
-              {t.trombayOfficeTitle}
-            </h3>
-            <div className="space-y-2 text-xs text-slate-400">
-              <div className="flex items-start space-x-2">
-                <MapPin className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
-                <span>{t.trombayAddress}</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="w-4 h-4 text-amber-500 shrink-0" />
-                <span>{t.trombayPhone}</span>
-              </div>
-              <div className="mt-4 pt-3 border-t border-navy-800">
-                <div className="text-[11px] text-amber-300 font-medium">
-                  {language === "mr"
-                    ? "मुखपत्र: मासिक आगरी दर्पण"
-                    : "Official Organ: Monthly Agri Darpan"}
-                </div>
-                <div className="text-[11px] text-slate-400">
-                  {language === "mr"
-                    ? "वधु-वर सूचक मंडळ व समाज प्रबोधन"
-                    : "Matrimonial Bureau & Community Awakening"}
-                </div>
-              </div>
-            </div>
+            <h2>{mr ? "आपला सहभाग" : "Be part of the story"}</h2>
+            <p>
+              {mr
+                ? "माहिती सुचवा, अभिप्राय कळवा किंवा प्रकाशनासाठी विश्वासार्ह स्रोत पाठवा."
+                : "Suggest a resource, share feedback or send a reliable source for publication."}
+            </p>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 text-sm"
+            >
+              {mr ? "आमच्याशी संपर्क साधा" : "Contact the platform team"}
+              <ArrowUpRight size={17} />
+            </Link>
+            {contactEmail && (
+              <a
+                className="inline-flex items-center gap-2 text-sm mt-3 break-all"
+                href={"mailto:" + contactEmail}
+              >
+                <Mail size={15} />
+                {contactEmail}
+              </a>
+            )}
           </div>
         </div>
-
-        {/* Important Community Clarification Notice */}
-        <div className="p-3 rounded-lg bg-navy-900 border border-navy-800 mb-6 text-xs text-slate-400 flex items-start space-x-2.5">
-          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div>
-            <strong className="text-slate-300">
-              {language === "mr" ? "महत्त्वाची नोंद:" : "Important Notice:"}
-            </strong>{" "}
-            {language === "mr"
-              ? "आगरी समाज हा सामाजिक समुदाय असून केवळ शेती व्यवसाय दर्शवत नाही. हे व्यासपीठ सर्व उद्योग, व्यापार, उत्पादन, तंत्रज्ञान व सेवा क्षेत्रांतील आगरी समाजातील व्यावसायिकांचे प्रतिनिधित्व करते."
-              : "Agri Samaj refers to the community, not exclusively to agriculture. This platform represents entrepreneurs, community initiatives, organizations, and services across multiple modern industries."}
-          </div>
-        </div>
-
-        {/* Bottom Line */}
-        <div className="pt-6 border-t border-navy-900 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400">
-          <p>{t.copyright}</p>
-          <div className="flex items-center space-x-4 mt-2 sm:mt-0">
-            <Link href="/privacy" className="hover:text-slate-400 transition">
-              {language === "mr" ? "गोपनीयता" : "Privacy"}
-            </Link>
-            <span>•</span>
-            <Link href="/contact" className="hover:text-slate-400 transition">
-              {language === "mr" ? "संपर्क" : "Contact"}
-            </Link>
-            <span>•</span>
-            <Link href="/login" className="hover:text-slate-400 transition">
-              {language === "mr" ? "प्रशासक लॉगिन" : "Admin Login"}
-            </Link>
+        <div className="footer-bottom">
+          <p>
+            {mr
+              ? "© " +
+                new Date().getFullYear() +
+                " आगरी समाज समुदाय व्यासपीठ. ऐतिहासिक संदर्भांमध्ये नमूद संस्थांशी अधिकृत संलग्नता गृहित धरू नये. खासगी व्यवसाय कागदपत्रे व जनगणना माहिती सार्वजनिक केली जात नाही."
+              : "© " +
+                new Date().getFullYear() +
+                " Aagri Samaj Community Platform. Historical references do not establish official affiliation with a named institution. Private business documents and census information are not published."}
+          </p>
+          <div className="flex gap-5 shrink-0">
+            <Link href="/privacy">{mr ? "गोपनीयता" : "Privacy"}</Link>
+            <Link href="/login">{mr ? "लॉगिन" : "Login"}</Link>
+            <Link href="/admin">{mr ? "प्रशासन" : "Admin"}</Link>
           </div>
         </div>
       </div>
