@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { apiError, readJson } from "@/lib/http";
+import { apiError, rateLimit, readJson } from "@/lib/http";
+import { invalidatePublicData } from "@/lib/public-cache";
 import { text, optionalText } from "@/lib/validation";
 const schema = z.object({
   id: optionalText(100),
@@ -44,6 +45,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const admin = await requireAuth(["ADMIN"]);
+    await rateLimit(request, "admin/publications", 60);
     const { id, ...data } = await readJson(request, schema);
     const record = await prisma.$transaction(async (tx) => {
       const saved = id
@@ -59,6 +61,7 @@ export async function POST(request: Request) {
       });
       return saved;
     });
+    invalidatePublicData("publications");
     return NextResponse.json({ record });
   } catch (e) {
     return apiError(e);

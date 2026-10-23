@@ -1,10 +1,12 @@
 "use client";
 import Feedback from "@/components/Feedback";
 import { apiFetch } from "@/lib/client-api";
+import { useBusinessShortlist } from "@/components/useBusinessShortlist";
 
 import { useLanguage } from "@/components/LanguageContext";
 import {
   ArrowLeft,
+  Bookmark,
   Briefcase,
   CheckCircle2,
   Factory,
@@ -17,12 +19,12 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { getLocalizedBusiness } from "@/lib/localize";
 
 export default function BusinessDetailPage() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
   const { language, t } = useLanguage();
   const [requestError, setRequestError] = useState("");
 
@@ -30,34 +32,58 @@ export default function BusinessDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const shortlist = useBusinessShortlist();
 
   useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setBusiness(null);
+    setError("");
     async function loadDetail() {
       try {
-        const res = await apiFetch(`/api/businesses/${id}`);
+        const res = await apiFetch(
+          `/api/businesses/${encodeURIComponent(id)}`,
+          { signal: controller.signal },
+        );
         const data = await res.json();
+        if (controller.signal.aborted) return;
         if (data.business) {
           setBusiness(data.business);
         } else {
           setError(data.error || "Business profile not found");
         }
-      } catch {
-        setError("Failed to fetch details");
+      } catch (cause) {
+        if (!controller.signal.aborted)
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Unable to load this business profile.",
+          );
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
     if (id) {
       loadDetail();
     }
+    return () => controller.abort();
   }, [id]);
+
+  useEffect(
+    () => () => {
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+    },
+    [],
+  );
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copyTimer.current) clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       setRequestError(
         language === "mr"
@@ -104,6 +130,7 @@ export default function BusinessDetailPage() {
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
       <Feedback message={requestError} />
+      <Feedback message={shortlist.error} />
       {/* Top Navigation */}
       <div className="flex items-center justify-between">
         <Link
@@ -116,21 +143,43 @@ export default function BusinessDetailPage() {
           </span>
         </Link>
 
-        <button
-          onClick={handleShare}
-          className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
-        >
-          <Share2 className="w-3.5 h-3.5" />
-          <span>
-            {copied
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <button
+            type="button"
+            disabled={shortlist.loading || shortlist.pendingIds.has(loc.id)}
+            aria-pressed={shortlist.savedIds.has(loc.id)}
+            onClick={() => shortlist.toggle(loc.id)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-200 text-xs font-semibold text-emerald-900 bg-white hover:bg-emerald-50 disabled:opacity-50 min-h-10"
+          >
+            <Bookmark
+              size={15}
+              fill={shortlist.savedIds.has(loc.id) ? "currentColor" : "none"}
+              aria-hidden="true"
+            />
+            {shortlist.savedIds.has(loc.id)
               ? language === "mr"
-                ? "लिंक कॉपी झाली!"
-                : "Copied!"
+                ? "जतन केलेला व्यवसाय"
+                : "Saved business"
               : language === "mr"
-                ? "शेअर करा"
-                : "Share"}
-          </span>
-        </button>
+                ? "व्यवसाय जतन करा"
+                : "Save business"}
+          </button>
+          <button
+            onClick={handleShare}
+            className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+          >
+            <Share2 className="w-3.5 h-3.5" />
+            <span>
+              {copied
+                ? language === "mr"
+                  ? "लिंक कॉपी झाली!"
+                  : "Copied!"
+                : language === "mr"
+                  ? "शेअर करा"
+                  : "Share"}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Main Profile Header Card */}

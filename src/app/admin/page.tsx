@@ -26,32 +26,34 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const controller = new AbortController();
     async function loadAdminData() {
       try {
-        const statsRes = await apiFetch("/api/admin/stats");
-        if (statsRes.status === 401 || statsRes.status === 403) {
-          router.push("/login");
-          return;
-        }
-        const statsData = await statsRes.json();
+        const [statsData, busData] = await Promise.all([
+          apiFetch("/api/admin/stats", { signal: controller.signal }).then(
+            (response) => response.json(),
+          ),
+          apiFetch("/api/admin/businesses?status=PENDING&limit=5", {
+            signal: controller.signal,
+          }).then((response) => response.json()),
+        ]);
+        if (controller.signal.aborted) return;
         if (statsData.stats) setStats(statsData.stats);
-
-        const busRes = await apiFetch("/api/admin/businesses?status=PENDING");
-        const busData = await busRes.json();
-        if (busData.businesses)
-          setPendingBusinesses(busData.businesses.slice(0, 5));
+        if (busData.businesses) setPendingBusinesses(busData.businesses);
       } catch (err) {
+        if (controller.signal.aborted) return;
         setRequestError(
           err instanceof Error
             ? err.message
             : "Unable to complete the request.",
         );
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
     loadAdminData();
+    return () => controller.abort();
   }, [router]);
 
   if (loading) {

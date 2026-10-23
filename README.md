@@ -7,9 +7,11 @@ Agri Samaj is an open-source website for the Agri community. It brings local bus
 ## What you can do
 
 - Find businesses and service providers by name, category, district or business type, and view their public profiles and contact details.
+- Save businesses to your account and return to them from your dashboard. Search filters can be shared as a link.
 - Read about Agri history, language, culture, community organisations and initiatives.
 - Find links to official scholarship, education, employment, skill development and entrepreneurship resources.
 - Read published news, announcements and event information.
+- Search community updates, find upcoming or past events, and download published events to your calendar.
 - Browse community publications and open available PDFs.
 - Send questions, corrections and suggestions through the contact form.
 - Ask the AI assistant questions in Marathi or English about the website, community information and listed businesses. You can type or record a question, review its transcript, read answers with source links and listen to an AI-generated voice reply. The assistant cannot access private applications or perform account actions.

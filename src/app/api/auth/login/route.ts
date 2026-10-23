@@ -4,6 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
 
+// A fixed work factor keeps unknown and disabled accounts on the same bcrypt
+// path as incorrect passwords, without exposing a usable account credential.
+const DUMMY_PASSWORD_HASH =
+  "$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.";
+
 export async function POST(request: Request) {
   try {
     await rateLimit(request, "auth/login", 10);
@@ -30,17 +35,25 @@ export async function POST(request: Request) {
       );
     const user = await prisma.user.findUnique({
       where: { email: email.toLowerCase().trim() },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        passwordHash: true,
+        isActive: true,
+      },
     });
 
-    if (!user || !user.isActive) {
-      return NextResponse.json(
-        { error: "Invalid credentials or inactive account" },
-        { status: 401 },
-      );
-    }
-
-    const isValid = await comparePassword(password, user.passwordHash);
-    if (!isValid) {
+    const isValid = await comparePassword(
+      password,
+      user?.passwordHash || DUMMY_PASSWORD_HASH,
+    );
+    if (
+      !user?.isActive ||
+      !isValid ||
+      !["ADMIN", "MEMBER", "ENUMERATOR"].includes(user.role)
+    ) {
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 },

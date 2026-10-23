@@ -1,4 +1,5 @@
-import { publicBusiness } from "@/lib/business";
+import { publicBusiness, publicBusinessSelect } from "@/lib/business";
+import { getPublicDirectoryFirstPage } from "@/lib/public-data";
 import { apiError, HttpError } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
@@ -41,6 +42,26 @@ export async function GET(request: Request) {
     )
       throw new HttpError(400, "Invalid directory filter.");
     const skip = (page - 1) * limit;
+
+    if (
+      !q &&
+      !category &&
+      !district &&
+      !classification &&
+      page === 1 &&
+      sort === "recent"
+    ) {
+      const snapshot = await getPublicDirectoryFirstPage();
+      return NextResponse.json({
+        businesses: snapshot.businesses.slice(0, limit),
+        pagination: {
+          page,
+          limit,
+          total: snapshot.total,
+          totalPages: Math.ceil(snapshot.total / limit),
+        },
+      });
+    }
 
     const andConditions: Prisma.BusinessProfileWhereInput[] = [
       { status: "APPROVED" },
@@ -91,17 +112,7 @@ export async function GET(request: Request) {
       prisma.businessProfile.count({ where }),
       prisma.businessProfile.findMany({
         where,
-        include: {
-          category: {
-            select: {
-              id: true,
-              slug: true,
-              nameMr: true,
-              nameEn: true,
-              icon: true,
-            },
-          },
-        },
+        select: publicBusinessSelect,
         orderBy:
           sort === "name"
             ? [{ businessName: "asc" }, { id: "asc" }]

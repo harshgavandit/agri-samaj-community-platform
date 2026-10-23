@@ -1,12 +1,14 @@
 "use client";
 import Feedback from "@/components/Feedback";
+import AdminPagination from "@/components/AdminPagination";
+import type { Pagination } from "@/lib/pagination";
 import { apiFetch } from "@/lib/client-api";
 
 import { useLanguage } from "@/components/LanguageContext";
 import { formatDate } from "@/lib/utils";
 import { ArrowLeft, Mail, Phone } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 export default function AdminInquiriesPage() {
   const { language } = useLanguage();
@@ -14,25 +16,64 @@ export default function AdminInquiriesPage() {
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalPages: 0,
+  });
 
-  const fetchInquiries = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch("/api/admin/inquiries");
-      const data = await res.json();
-      if (data.inquiries) setInquiries(data.inquiries);
-    } catch (e) {
-      setRequestError(
-        e instanceof Error ? e.message : "Unable to complete the request.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchInquiries = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setRequestError("");
+      try {
+        const params = new URLSearchParams({
+          status,
+          q: query,
+          page: String(page),
+          limit: "25",
+        });
+        const res = await apiFetch(`/api/admin/inquiries?${params}`, {
+          signal,
+        });
+        const data = await res.json();
+        if (signal?.aborted) return;
+        if (data.inquiries) setInquiries(data.inquiries);
+        if (data.pagination) {
+          setPagination(data.pagination);
+          if (page > Math.max(1, data.pagination.totalPages))
+            setPage(Math.max(1, data.pagination.totalPages));
+        }
+      } catch (e) {
+        if (signal?.aborted) return;
+        setRequestError(
+          e instanceof Error ? e.message : "Unable to complete the request.",
+        );
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [status, query, page],
+  );
 
   useEffect(() => {
-    fetchInquiries();
-  }, []);
+    const controller = new AbortController();
+    void fetchInquiries(controller.signal);
+    return () => controller.abort();
+  }, [fetchInquiries]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleStatusUpdate = async (id: string, newStatus: string) => {
     if (saving) return;
@@ -44,7 +85,7 @@ export default function AdminInquiriesPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: newStatus }),
       });
-      fetchInquiries();
+      await fetchInquiries();
     } catch (e) {
       setRequestError(
         e instanceof Error ? e.message : "Unable to complete the request.",
@@ -82,6 +123,47 @@ export default function AdminInquiriesPage() {
             ? "वेबसाइटवरील संपर्क फॉर्मद्वारे नागरिकांकडून आणि व्यावसायिकांकडून आलेले संदेश आणि त्यांचे निवारण."
             : "Incoming inquiries from members and businesses through the contact portal."}
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+        <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+          {language === "mr" ? "स्थिती" : "Status"}
+          <select
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setPage(1);
+            }}
+            className="rounded-lg border border-slate-300 p-2"
+            disabled={saving}
+          >
+            <option value="ALL">
+              {language === "mr" ? "सर्व" : "All statuses"}
+            </option>
+            <option value="NEW">{language === "mr" ? "नवीन" : "New"}</option>
+            <option value="IN_PROGRESS">
+              {language === "mr" ? "प्रक्रियेत" : "In progress"}
+            </option>
+            <option value="RESOLVED">
+              {language === "mr" ? "निवारण झाले" : "Resolved"}
+            </option>
+          </select>
+        </label>
+        <label className="flex flex-1 items-center gap-2 text-sm font-semibold text-slate-700">
+          {language === "mr" ? "शोधा" : "Search"}
+          <input
+            type="search"
+            maxLength={200}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={
+              language === "mr"
+                ? "नाव, ईमेल किंवा विषय"
+                : "Name, email or subject"
+            }
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 p-2"
+          />
+        </label>
       </div>
 
       {loading ? (
@@ -179,10 +261,15 @@ export default function AdminInquiriesPage() {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-xs text-slate-600">
           {language === "mr"
-            ? "सध्या कोणतीही विचारणा प्रलंबित नाही."
-            : "No pending inquiries currently."}
+            ? "या निकषांशी जुळणारी विचारणा सापडली नाही."
+            : "No inquiries match these filters."}
         </div>
       )}
+      <AdminPagination
+        pagination={pagination}
+        loading={loading || saving}
+        onPageChange={setPage}
+      />
     </div>
   );
 }

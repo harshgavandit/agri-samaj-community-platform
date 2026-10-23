@@ -26,6 +26,7 @@ export async function openaiRequest(
   signal: AbortSignal,
   json = true,
 ) {
+  if (signal.aborted) throw new HttpError(499, "Request cancelled.");
   const { key } = assistantConfig();
   let response: Response;
   try {
@@ -110,6 +111,7 @@ export async function narrate(
   language: "mr" | "en",
   signal: AbortSignal,
 ): Promise<Buffer> {
+  if (signal.aborted) throw new HttpError(499, "Request cancelled.");
   const config = assistantConfig();
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(

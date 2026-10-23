@@ -15,6 +15,7 @@ export async function GET() {
       totalPublications,
       totalUsers,
       totalInquiries,
+      revenueAgg,
     ] = await Promise.all([
       prisma.businessProfile.count({ where: { status: "APPROVED" } }),
       prisma.businessProfile.count({ where: { status: "PENDING" } }),
@@ -23,13 +24,11 @@ export async function GET() {
       prisma.publication.count({ where: { isPublic: true } }),
       prisma.user.count(),
       prisma.contactInquiry.count({ where: { status: "NEW" } }),
+      prisma.advertisementBooking.aggregate({
+        where: { paymentStatus: "VERIFIED" },
+        _sum: { amount: true },
+      }),
     ]);
-
-    // Calculate verified ad revenue
-    const revenueAgg = await prisma.advertisementBooking.aggregate({
-      where: { paymentStatus: "VERIFIED" },
-      _sum: { amount: true },
-    });
 
     return NextResponse.json({
       stats: {

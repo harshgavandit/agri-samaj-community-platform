@@ -1,10 +1,8 @@
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
-  testMatch:
-    process.env.E2E_BLOB_TEST === "true"
-      ? ["**/*.spec.ts"]
-      : ["**/platform.spec.ts", "**/assistant.spec.ts"],
+  testMatch: ["**/*.spec.ts"],
+  testIgnore: process.env.E2E_BLOB_TEST === "true" ? [] : ["**/blob.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,

@@ -4,9 +4,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await Promise.all([
-      prisma.rateLimit.count(),
-      prisma.communityContent.count(),
-      prisma.siteSettings.count(),
+      prisma.rateLimit.findFirst({ select: { key: true } }),
+      prisma.communityContent.findFirst({ select: { id: true } }),
+      prisma.siteSettings.findFirst({ select: { id: true } }),
     ]);
     return NextResponse.json(
       { status: "ok" },

@@ -3,6 +3,7 @@ import { apiError, HttpError, rateLimit, readJson } from "@/lib/http";
 import { communitySchema } from "@/lib/community-validation";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { invalidatePublicData } from "@/lib/public-cache";
 export async function GET() {
   try {
     await requireAuth(["ADMIN"]);
@@ -74,6 +75,7 @@ export async function POST(request: Request) {
       });
       return saved;
     });
+    invalidatePublicData("community");
     return NextResponse.json({ success: true, entry });
   } catch (error) {
     return apiError(error);

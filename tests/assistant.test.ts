@@ -57,6 +57,13 @@ const knowledgeStub = () => {
   stub(prisma.businessProfile, "findMany", async () => []);
 };
 test.beforeEach(() => {
+  // Route unit tests run outside Next's request store. Supply a cache miss
+  // adapter so the real public corpus loader still exercises Prisma projections.
+  Reflect.set(globalThis, "__incrementalCache", {
+    generateSimpleCacheKey: async (key: string) => key,
+    get: async () => null,
+    set: async () => undefined,
+  });
   process.env.APP_URL = origin;
   process.env.JWT_SECRET = randomBytes(48).toString("hex");
   process.env.OPENAI_API_KEY = "unit-test-only-key";
@@ -66,6 +73,7 @@ test.beforeEach(() => {
   stub(prisma.rateLimit, "deleteMany", async () => ({ count: 0 }));
 });
 test.afterEach(() => {
+  Reflect.deleteProperty(globalThis, "__incrementalCache");
   while (restores.length) restores.pop()!();
   mock.restoreAll();
 });

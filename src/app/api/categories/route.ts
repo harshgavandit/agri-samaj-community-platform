@@ -1,22 +1,10 @@
 import { apiError } from "@/lib/http";
-import { prisma } from "@/lib/prisma";
+import { getPublicCategories } from "@/lib/public-data";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const categories = await prisma.businessCategory.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-      include: {
-        _count: {
-          select: {
-            businesses: {
-              where: { status: "APPROVED" },
-            },
-          },
-        },
-      },
-    });
+    const categories = await getPublicCategories();
 
     return NextResponse.json({ categories });
   } catch (error) {

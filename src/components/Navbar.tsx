@@ -33,14 +33,14 @@ export default function Navbar() {
   }, [pathname]);
   useEffect(() => {
     const escape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && open) {
         setOpen(false);
         toggle.current?.focus();
       }
     };
     window.addEventListener("keydown", escape);
     return () => window.removeEventListener("keydown", escape);
-  }, []);
+  }, [open]);
   const links = [
     { href: "/", mr: "मुख्यपृष्ठ", en: "Home" },
     { href: "/about", mr: "आपला समाज", en: "Our community" },
@@ -83,10 +83,12 @@ export default function Navbar() {
             ? "आपल्या माणसांना जोडणारे समुदाय व्यासपीठ"
             : "A community platform connecting our people"}
         </span>
-        <span>
+        <span className="topbar-utility">
           {mr
             ? "संस्कृती · उद्योजकता · नवी संधी"
             : "Heritage · Enterprise · Opportunity"}
+          <Link href="/contact">{mr ? "संपर्क" : "Contact"}</Link>
+          {!user && <Link href="/login">{mr ? "लॉगिन" : "Sign in"}</Link>}
         </span>
       </div>
       {error && (

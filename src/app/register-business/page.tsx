@@ -19,7 +19,54 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useEffect, useRef, useState } from "react";
+
+function initialBusinessForm(id: string) {
+  return {
+    id,
+    refNumber: "",
+    ownerName: "",
+    ownerPhone: "",
+    ownerEmail: "",
+    ownerEducationSchool: "",
+    ownerEducationVocational: "",
+    businessName: "",
+    brandName: "",
+    categoryId: "",
+    subCategory: "",
+    productsServices: "",
+    description: "",
+    establishedYear: new Date().getFullYear().toString(),
+    businessClassification: "MANUFACTURER",
+    ownershipType: "PROPRIETORSHIP",
+    workNature: "FULL_TIME",
+    startedBy: "SELF",
+    officeAddress: "",
+    officeCity: "",
+    officeTaluka: "पनवेल",
+    officeDistrict: "रायगड",
+    officePincode: "",
+    officePhone: "",
+    hasFactory: false,
+    factoryAddress: "",
+    factoryCity: "",
+    factoryTaluka: "",
+    factoryDistrict: "रायगड",
+    factoryPincode: "",
+    isAddressPublic: true,
+    premisesOwnership: "OWNED",
+    areaSqm: "",
+    employeeCountFemale: "0",
+    employeeCountMale: "0",
+    employeeCountTotal: "0",
+    website: "",
+    phone: "",
+    email: "",
+    logoUrl: "",
+    documentUrl: "",
+    termsAccepted: false,
+  };
+}
 
 function RegisterBusinessForm() {
   const searchParams = useSearchParams();
@@ -39,60 +86,20 @@ function RegisterBusinessForm() {
     isDraft: boolean;
   } | null>(null);
 
-  // Form State
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => initialBusinessForm(editId));
+  const [profileLoad, setProfileLoad] = useState({
     id: editId,
-    refNumber: "",
-    // Step 1: Entrepreneur
-    ownerName: "",
-    ownerPhone: "",
-    ownerEmail: "",
-    ownerEducationSchool: "",
-    ownerEducationVocational: "",
-    // Step 2: Business Core
-    businessName: "",
-    brandName: "",
-    categoryId: "",
-    subCategory: "",
-    productsServices: "",
-    description: "",
-    establishedYear: new Date().getFullYear().toString(),
-    businessClassification: "MANUFACTURER",
-    ownershipType: "PROPRIETORSHIP",
-    workNature: "FULL_TIME",
-    startedBy: "SELF",
-    // Step 3: Address
-    officeAddress: "",
-    officeCity: "",
-    officeTaluka: "पनवेल",
-    officeDistrict: "रायगड",
-    officePincode: "",
-    officePhone: "",
-    hasFactory: false,
-    factoryAddress: "",
-    factoryCity: "",
-    factoryTaluka: "",
-    factoryDistrict: "रायगड",
-    factoryPincode: "",
-    isAddressPublic: true,
-    // Step 4: Operations
-    premisesOwnership: "OWNED",
-    areaSqm: "",
-    employeeCountFemale: "0",
-    employeeCountMale: "0",
-    employeeCountTotal: "0",
-    website: "",
-    phone: "",
-    email: "",
-    // Step 5: Verification
-    logoUrl: "",
-    documentUrl: "",
-    termsAccepted: false,
+    state: editId ? "loading" : "ready",
   });
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const formVersion = useRef(0);
+  const profileReady =
+    formData.id === editId &&
+    (!editId || (profileLoad.id === editId && profileLoad.state === "ready"));
 
-  // Load categories and existing profile if editing
   useEffect(() => {
-    apiFetch("/api/categories")
+    const controller = new AbortController();
+    apiFetch("/api/categories", { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         if (data.categories && data.categories.length > 0) {
@@ -103,12 +110,36 @@ function RegisterBusinessForm() {
           }));
         }
       })
-      .catch((error: Error) => setRequestError(error.message));
+      .catch((error: Error) => {
+        if (!controller.signal.aborted) setRequestError(error.message);
+      });
+    return () => controller.abort();
+  }, []);
 
+  useEffect(() => {
+    const controller = new AbortController();
+    const version = ++formVersion.current;
+    setProfileLoad({ id: editId, state: editId ? "loading" : "ready" });
+    setRequestError("");
+    setSuccessData(null);
+    setStep(1);
+    setUploadingDoc(false);
+    setUploadingLogo(false);
+    setSubmitting(false);
+    setFormData((previous) => ({
+      ...initialBusinessForm(editId),
+      categoryId: editId ? "" : previous.categoryId,
+    }));
     if (editId) {
-      apiFetch(`/api/businesses/${editId}`)
+      apiFetch(`/api/businesses/${encodeURIComponent(editId)}`, {
+        signal: controller.signal,
+      })
         .then((r) => r.json())
         .then((data) => {
+          if (controller.signal.aborted || version !== formVersion.current)
+            return;
+          if (!data.business || data.business.id !== editId)
+            throw new Error("Unable to load this business application.");
           if (data.business) {
             const b = data.business;
             setFormData({
@@ -158,11 +189,21 @@ function RegisterBusinessForm() {
               documentUrl: b.documentUrl || "",
               termsAccepted: Boolean(b.termsAccepted),
             });
+            setProfileLoad({ id: editId, state: "ready" });
           }
         })
-        .catch((error: Error) => setRequestError(error.message));
+        .catch((error: Error) => {
+          if (controller.signal.aborted || version !== formVersion.current)
+            return;
+          setRequestError(error.message);
+          setProfileLoad({ id: editId, state: "error" });
+        });
     }
-  }, [editId]);
+    return () => {
+      controller.abort();
+      formVersion.current++;
+    };
+  }, [editId, loadAttempt]);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -203,7 +244,8 @@ function RegisterBusinessForm() {
     targetField: "documentUrl" | "logoUrl",
   ) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !profileReady || submitting) return;
+    const version = formVersion.current;
 
     if (targetField === "documentUrl") setUploadingDoc(true);
     else setUploadingLogo(true);
@@ -213,16 +255,20 @@ function RegisterBusinessForm() {
       if (targetField === "logoUrl" && !file.type.startsWith("image/"))
         throw new Error("Choose a JPG, PNG or WebP image for the logo.");
       const uploadedUrl = await uploadFile(file);
+      if (version !== formVersion.current) return;
 
       setFormData((prev) => ({
         ...prev,
         [targetField]: uploadedUrl,
       }));
     } catch (err: any) {
-      setErrorMsg(err.message || "File upload error");
+      if (version === formVersion.current)
+        setErrorMsg(err.message || "File upload error");
     } finally {
-      if (targetField === "documentUrl") setUploadingDoc(false);
-      else setUploadingLogo(false);
+      if (version === formVersion.current) {
+        if (targetField === "documentUrl") setUploadingDoc(false);
+        else setUploadingLogo(false);
+      }
     }
   };
 
@@ -271,6 +317,8 @@ function RegisterBusinessForm() {
   };
 
   const handleSubmit = async (isDraft = false) => {
+    if (submitting || uploadingDoc || uploadingLogo || !profileReady) return;
+    const version = formVersion.current;
     setErrorMsg("");
     setSubmitting(true);
 
@@ -287,6 +335,7 @@ function RegisterBusinessForm() {
       });
 
       const data = await res.json();
+      if (version !== formVersion.current) return;
       if (!res.ok) {
         throw new Error(data.error || "Failed to submit registration");
       }
@@ -296,11 +345,47 @@ function RegisterBusinessForm() {
         isDraft,
       });
     } catch (err: any) {
-      setErrorMsg(err.message || "Error submitting registration");
+      if (version === formVersion.current)
+        setErrorMsg(err.message || "Error submitting registration");
     } finally {
-      setSubmitting(false);
+      if (version === formVersion.current) setSubmitting(false);
     }
   };
+
+  if (!profileReady) {
+    const failed = profileLoad.id === editId && profileLoad.state === "error";
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 px-4 py-12">
+        <h1 className="text-2xl font-bold text-navy-950">
+          {language === "mr"
+            ? "नोंदणी अर्ज संपादन"
+            : "Edit business application"}
+        </h1>
+        <Feedback message={requestError} />
+        {failed ? (
+          <button
+            type="button"
+            onClick={() => setLoadAttempt((attempt) => attempt + 1)}
+            className="rounded-xl bg-navy-950 px-5 py-3 font-semibold text-white"
+          >
+            {language === "mr"
+              ? "पुन्हा प्रयत्न करा"
+              : "Retry loading application"}
+          </button>
+        ) : (
+          <p role="status" className="flex items-center gap-2 text-slate-600">
+            <Loader2 className="h-5 w-5 motion-safe:animate-spin" aria-hidden />
+            {language === "mr"
+              ? "अर्ज लोड होत आहे…"
+              : "Loading your application…"}
+          </p>
+        )}
+        <Link href="/dashboard" className="inline-block text-sm underline">
+          {language === "mr" ? "डॅशबोर्डकडे परत जा" : "Back to dashboard"}
+        </Link>
+      </div>
+    );
+  }
 
   if (successData) {
     return (
@@ -384,9 +469,12 @@ function RegisterBusinessForm() {
             { num: 4, label: t.regStep4 },
             { num: 5, label: t.regStep5 },
           ].map((s) => (
-            <div
+            <button
               key={s.num}
+              type="button"
               onClick={() => setStep(s.num)}
+              disabled={submitting}
+              aria-current={step === s.num ? "step" : undefined}
               className={`p-2 rounded-lg cursor-pointer transition ${
                 step === s.num
                   ? "bg-amber-600 text-white font-bold shadow"
@@ -396,7 +484,7 @@ function RegisterBusinessForm() {
               }`}
             >
               <span className="block text-[11px] truncate">{s.label}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>
@@ -1343,7 +1431,12 @@ function RegisterBusinessForm() {
               <button
                 type="button"
                 onClick={() => handleSubmit(false)}
-                disabled={submitting || !formData.termsAccepted}
+                disabled={
+                  submitting ||
+                  uploadingDoc ||
+                  uploadingLogo ||
+                  !formData.termsAccepted
+                }
                 className="inline-flex items-center space-x-1.5 px-8 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs sm:text-sm font-bold transition shadow disabled:opacity-50"
               >
                 <Check className="w-4 h-4" />

@@ -1,9 +1,10 @@
 "use client";
 import Image from "next/image";
 import Link from "next/link";
-import { ExternalLink, ArrowLeft, CalendarDays } from "lucide-react";
+import { ExternalLink, ArrowLeft, CalendarDays, Download } from "lucide-react";
 import { CommunityEntry, kindLabels } from "@/lib/community";
 import { useLanguage } from "./LanguageContext";
+import ShareLink from "./ShareLink";
 export default function CommunityArticle({ entry }: { entry: CommunityEntry }) {
   const { language } = useLanguage();
   const mr = language === "mr";
@@ -14,17 +15,20 @@ export default function CommunityArticle({ entry }: { entry: CommunityEntry }) {
     }).format(new Date(value));
   return (
     <article className="page-shell article-shell">
-      <Link
-        href={
-          ["EDUCATION", "RESOURCE"].includes(entry.kind)
-            ? "/resources"
-            : "/about"
-        }
-        className="back-link"
-      >
-        <ArrowLeft size={16} />
-        {mr ? "समुदाय विभागात परत" : "Back to community"}
-      </Link>
+      <div className="article-topline">
+        <Link
+          href={
+            ["EDUCATION", "RESOURCE"].includes(entry.kind)
+              ? "/resources"
+              : "/about"
+          }
+          className="back-link"
+        >
+          <ArrowLeft size={16} />
+          {mr ? "समुदाय विभागात परत" : "Back to community"}
+        </Link>
+        <ShareLink path={`/community/${entry.slug}`} />
+      </div>
       <header className="page-intro">
         <span className="eyebrow">
           {kindLabels[entry.kind][language]} ·{" "}
@@ -46,7 +50,8 @@ export default function CommunityArticle({ entry }: { entry: CommunityEntry }) {
             src={entry.coverImageUrl}
             width={1200}
             height={675}
-            unoptimized
+            sizes="(max-width: 800px) 100vw, 900px"
+            unoptimized={entry.coverImageUrl.startsWith("/api/files/")}
             alt={mr ? entry.titleMr : entry.titleEn}
           />
           <figcaption>{entry.coverCredit}</figcaption>
@@ -60,17 +65,38 @@ export default function CommunityArticle({ entry }: { entry: CommunityEntry }) {
         </p>
       )}
       {entry.eventAt && (
-        <p className="event-meta">
-          <CalendarDays size={18} />
-          {date(entry.eventAt)} · {entry.location} ·{" "}
-          {new Date(entry.eventAt) < new Date()
-            ? mr
-              ? "मागील कार्यक्रम"
-              : "Past event"
-            : mr
-              ? "आगामी कार्यक्रम"
-              : "Upcoming event"}
-        </p>
+        <div className="event-detail-panel">
+          <p className="event-meta">
+            <CalendarDays size={18} />
+            {new Intl.DateTimeFormat(mr ? "mr-IN" : "en-IN", {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "Asia/Kolkata",
+            }).format(new Date(entry.eventAt))}{" "}
+            · {entry.location} ·{" "}
+            {new Date(entry.eventAt) < new Date()
+              ? mr
+                ? "मागील कार्यक्रम"
+                : "Past event"
+              : mr
+                ? "आगामी कार्यक्रम"
+                : "Upcoming event"}
+          </p>
+          {entry.kind === "EVENT" && (
+            <a
+              className="quiet-action"
+              href={`/api/community/${entry.slug}/calendar?language=${language}`}
+            >
+              <Download size={16} aria-hidden="true" />
+              {mr ? "कॅलेंडरमध्ये जोडा" : "Add to calendar"}
+            </a>
+          )}
+          <p className="studio-hint">
+            {mr
+              ? "वेळ भारतीय प्रमाणवेळेनुसार. उपस्थित राहण्यापूर्वी आयोजकांकडून तपशील निश्चित करा."
+              : "Times use India Standard Time. Confirm details with the organizer before attending."}
+          </p>
+        </div>
       )}
       <div className="article-body">
         {(mr ? entry.bodyMr : entry.bodyEn)
@@ -121,7 +147,10 @@ export default function CommunityArticle({ entry }: { entry: CommunityEntry }) {
             : "Confirm eligibility, fees, availability and application deadlines with the linked authority."}
         </p>
       </section>
-      <Link className="back-link" href="/contact">
+      <Link
+        className="back-link"
+        href={`/contact?subject=${encodeURIComponent(`Correction: ${entry.titleEn}`)}`}
+      >
         {mr
           ? "या माहितीमध्ये दुरुस्ती सुचवा"
           : "Suggest a correction to this information"}

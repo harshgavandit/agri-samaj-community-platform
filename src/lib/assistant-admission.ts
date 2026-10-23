@@ -42,5 +42,6 @@ export async function assistantAdmission(
     throw new HttpError(
       429,
       "The assistant has reached its hourly usage limit. Please try later or use the contact page.",
+      Math.max(1, Math.ceil(((hour + 1) * 3600000 - Date.now()) / 1000)),
     );
 }

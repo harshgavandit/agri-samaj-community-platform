@@ -15,6 +15,7 @@ import { useLanguage } from "./LanguageContext";
 import type { AssistantReply } from "@/lib/assistant-contract";
 import { MAX_RECORDING_SECONDS } from "@/lib/assistant-contract";
 import { prepareRecording } from "@/lib/assistant-audio";
+import CopyAnswer from "./CopyAnswer";
 
 type Message = {
   id: string;
@@ -570,6 +571,12 @@ export default function CommunityAssistant({
                       : text("Stop audio", "आवाज थांबवा")
                     : text("Read aloud", "उत्तर ऐका")}
                 </button>
+              )}
+              {message.reply && (
+                <CopyAnswer
+                  answer={message.content}
+                  sources={message.reply.sources}
+                />
               )}
             </article>
           ))}

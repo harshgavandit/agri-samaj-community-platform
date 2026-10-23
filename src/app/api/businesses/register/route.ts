@@ -5,6 +5,7 @@ import { requireOwnedUpload } from "@/lib/uploads";
 import { generateRefNumber } from "@/lib/utils";
 import { businessSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
+import { invalidatePublicData } from "@/lib/public-cache";
 
 export async function POST(request: Request) {
   try {
@@ -112,6 +113,7 @@ export async function POST(request: Request) {
       });
       return profile;
     });
+    invalidatePublicData("businesses");
     return NextResponse.json({
       success: true,
       profileId: saved.id,

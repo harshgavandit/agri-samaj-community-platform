@@ -3,6 +3,7 @@ import { apiError, rateLimit, readJson } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { businessSchema, statusSchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
+import { invalidatePublicData } from "@/lib/public-cache";
 
 export async function PATCH(
   request: Request,
@@ -69,6 +70,7 @@ export async function PATCH(
       return updated;
     });
 
+    invalidatePublicData("businesses");
     return NextResponse.json({ success: true, business: updated });
   } catch (error) {
     return apiError(error);

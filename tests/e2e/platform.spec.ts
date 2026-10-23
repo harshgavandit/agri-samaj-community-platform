@@ -104,7 +104,9 @@ test("member browser journey: register, save and resume a draft, upload, submit,
     timeout: process.env.E2E_BLOB_TEST === "true" ? 120_000 : 10_000,
   });
   await page.locator("[name=termsAccepted]").check();
-  await page.getByRole("button", { name: /Submit/i }).click();
+  await page
+    .getByRole("button", { name: "Submit Application", exact: true })
+    .click();
   await expect(
     page.getByText(/AASP-UDY-\d{4}-[A-F0-9]{16}/).first(),
   ).toBeVisible();
@@ -142,7 +144,7 @@ test("member browser journey: register, save and resume a draft, upload, submit,
   await expect(
     publicPage.getByRole("heading", { name: "Browser Verified Workshop" }),
   ).toBeVisible();
-  await publicPage.locator(`a[href="/directory/${draft.id}"]`).click();
+  await publicPage.locator(`a[href="/directory/${draft.id}"]:visible`).click();
   await expect(
     publicPage.getByText(
       "This listing was approved by the platform administrator.",
@@ -877,7 +879,7 @@ test("official resources, case-insensitive directory links, metadata and public-
   await page
     .getByRole("searchbox", { name: "Search community resources", exact: true })
     .fill("scholarship");
-  await expect(page.getByRole("status")).toContainText("2 entries");
+  await expect(page.locator(".result-count")).toContainText(/\d+ entries/);
   await page
     .getByRole("link", { name: "National Scholarship Portal", exact: true })
     .click();

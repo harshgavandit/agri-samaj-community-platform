@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import type { AssistantSource } from "./assistant-contract";
+import { getPublicAssistantCorpus } from "./public-data";
 
 export type KnowledgeItem = AssistantSource & { text: string };
 const help = [
@@ -90,24 +91,7 @@ export function rankKnowledge(items: KnowledgeItem[], query: string) {
 export async function assistantKnowledge(query: string, language: "mr" | "en") {
   const terms = searchTerms(query).slice(-6);
   const [articles, businesses, packages] = await Promise.all([
-    prisma.communityContent.findMany({
-      where: { status: "PUBLISHED", sourceVerified: true },
-      select: {
-        slug: true,
-        titleMr: true,
-        titleEn: true,
-        summaryMr: true,
-        summaryEn: true,
-        bodyMr: true,
-        bodyEn: true,
-        sourceNoteMr: true,
-        sourceNoteEn: true,
-        eventAt: true,
-        location: true,
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 100,
-    }),
+    getPublicAssistantCorpus(),
     terms.length
       ? prisma.businessProfile.findMany({
           where: {
@@ -163,7 +147,7 @@ export async function assistantKnowledge(query: string, language: "mr" | "en") {
         entry.summaryEn,
         (language === "mr" ? entry.bodyMr : entry.bodyEn).slice(0, 1800),
         language === "mr" ? entry.sourceNoteMr : entry.sourceNoteEn,
-        entry.eventAt?.toISOString(),
+        entry.eventAt,
         entry.location,
       ]
         .filter(Boolean)

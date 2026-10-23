@@ -1,13 +1,10 @@
 import { apiError } from "@/lib/http";
-import { prisma } from "@/lib/prisma";
+import { getPublicPackages } from "@/lib/public-data";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const packages = await prisma.advertisementPackage.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
+    const packages = await getPublicPackages();
 
     return NextResponse.json({ packages });
   } catch (error) {

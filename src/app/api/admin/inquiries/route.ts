@@ -1,16 +1,46 @@
 import { requireAuth } from "@/lib/auth";
-import { apiError, rateLimit, readJson } from "@/lib/http";
+import { apiError, HttpError, rateLimit, readJson } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { inquirySchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
+import { readPagination } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await requireAuth(["ADMIN"]);
-    const inquiries = await prisma.contactInquiry.findMany({
-      orderBy: { createdAt: "desc" },
+    const params = new URL(request.url).searchParams;
+    const { page, limit, skip } = readPagination(params);
+    const status = params.get("status") || "ALL";
+    const query = params.get("q")?.trim() || "";
+    if (
+      !["ALL", "NEW", "IN_PROGRESS", "RESOLVED"].includes(status) ||
+      query.length > 200
+    )
+      throw new HttpError(400, "Invalid inquiry filter.");
+    const where: Prisma.ContactInquiryWhereInput = {
+      ...(status !== "ALL" ? { status } : {}),
+      ...(query
+        ? {
+            OR: ["name", "email", "subject", "message"].map((field) => ({
+              [field]: { contains: query, mode: "insensitive" },
+            })),
+          }
+        : {}),
+    };
+    const [total, inquiries] = await Promise.all([
+      prisma.contactInquiry.count({ where }),
+      prisma.contactInquiry.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+        skip,
+        take: limit,
+      }),
+    ]);
+    return NextResponse.json({
+      inquiries,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-    return NextResponse.json({ inquiries });
   } catch (error) {
     return apiError(error);
   }

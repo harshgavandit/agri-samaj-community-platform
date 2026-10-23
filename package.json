@@ -10,7 +10,7 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "prisma:seed": "node prisma/seed.js",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --import ./tests/setup.mjs --test tests/*.test.ts",
     "type-check": "tsc --noEmit",
     "test:e2e": "node tests/run-e2e.mjs",
     "db:deploy": "prisma migrate deploy",

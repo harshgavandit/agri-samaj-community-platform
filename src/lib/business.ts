@@ -1,7 +1,62 @@
-import { BusinessProfile } from "@prisma/client";
+import { BusinessProfile, Prisma } from "@prisma/client";
+
+// Fetch the same allowlist that is exposed publicly. Private verification files,
+// payment details and reviewer notes never enter directory query results.
+export const publicBusinessSelect = {
+  id: true,
+  refNumber: true,
+  status: true,
+  businessName: true,
+  businessNameEn: true,
+  ownerName: true,
+  ownerNameEn: true,
+  brandName: true,
+  categoryId: true,
+  category: {
+    select: { id: true, slug: true, nameMr: true, nameEn: true, icon: true },
+  },
+  subCategory: true,
+  subCategoryEn: true,
+  productsServices: true,
+  productsServicesEn: true,
+  description: true,
+  descriptionEn: true,
+  establishedYear: true,
+  businessClassification: true,
+  ownershipType: true,
+  workNature: true,
+  premisesOwnership: true,
+  employeeCountTotal: true,
+  officeCity: true,
+  officeCityEn: true,
+  officeTaluka: true,
+  officeTalukaEn: true,
+  officeDistrict: true,
+  officeDistrictEn: true,
+  isAddressPublic: true,
+  officeAddress: true,
+  officeAddressEn: true,
+  officePincode: true,
+  factoryAddress: true,
+  factoryCity: true,
+  factoryTaluka: true,
+  factoryDistrict: true,
+  factoryPincode: true,
+  phone: true,
+  email: true,
+  website: true,
+  logoUrl: true,
+  publishedAt: true,
+} satisfies Prisma.BusinessProfileSelect;
+
+type PublicBusinessRecord = Prisma.BusinessProfileGetPayload<{
+  select: typeof publicBusinessSelect;
+}>;
 
 // Only explicitly public fields may leave the directory API.
-export function publicBusiness(b: BusinessProfile & { category?: unknown }) {
+export function publicBusiness(
+  b: PublicBusinessRecord | (BusinessProfile & { category?: unknown }),
+) {
   return {
     id: b.id,
     refNumber: b.refNumber,
@@ -48,6 +103,6 @@ export function publicBusiness(b: BusinessProfile & { category?: unknown }) {
     email: b.email,
     website: /^https?:\/\//i.test(b.website || "") ? b.website : null,
     logoUrl: b.logoUrl?.startsWith("/api/files/") ? b.logoUrl : null,
-    publishedAt: b.publishedAt,
+    publishedAt: b.publishedAt?.toISOString() || null,
   };
 }

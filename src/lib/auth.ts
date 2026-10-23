@@ -53,7 +53,15 @@ export function verifyToken(token: string): UserSession | null {
       issuer: "agri-samaj",
       audience: "agri-samaj-web",
     });
-    if (typeof payload === "string" || typeof payload.userId !== "string")
+    if (
+      typeof payload === "string" ||
+      typeof payload.userId !== "string" ||
+      !payload.userId ||
+      typeof payload.email !== "string" ||
+      typeof payload.name !== "string" ||
+      !["ADMIN", "MEMBER", "ENUMERATOR"].includes(payload.role) ||
+      typeof payload.exp !== "number"
+    )
       return null;
     return payload as UserSession;
   } catch {

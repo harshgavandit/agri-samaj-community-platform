@@ -1,6 +1,7 @@
 "use client";
 import Feedback from "@/components/Feedback";
-import { apiFetch } from "@/lib/client-api";
+import BusinessCard from "@/components/BusinessCard";
+import { useBusinessShortlist } from "@/components/useBusinessShortlist";
 
 import { useLanguage } from "@/components/LanguageContext";
 import { getLocalizedBusiness } from "@/lib/localize";
@@ -9,6 +10,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Building2,
+  Bookmark,
   CheckCircle2,
   Clock,
   Edit,
@@ -20,6 +22,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import styles from "./Dashboard.module.css";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -29,24 +32,35 @@ export default function DashboardPage() {
   const [businesses, setBusinesses] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const shortlist = useBusinessShortlist(true);
 
   useEffect(() => {
-    apiFetch("/api/dashboard/my-businesses")
+    const controller = new AbortController();
+    fetch("/api/dashboard/my-businesses", { signal: controller.signal })
       .then((r) => {
         if (r.status === 401) {
-          router.push("/login");
+          router.replace("/login?returnTo=%2Fdashboard");
           return null;
         }
+        if (!r.ok)
+          throw new Error(
+            "Unable to load your dashboard. Please refresh and try again.",
+          );
         return r.json();
       })
       .then((data) => {
-        if (data) {
+        if (data && !controller.signal.aborted) {
           if (data.businesses) setBusinesses(data.businesses);
           if (data.ads) setAds(data.ads);
         }
       })
-      .catch((error: Error) => setRequestError(error.message))
-      .finally(() => setLoading(false));
+      .catch((error: Error) => {
+        if (!controller.signal.aborted) setRequestError(error.message);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
   }, [router]);
 
   const getStatusBadge = (status: string) => {
@@ -94,25 +108,36 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="py-24 text-center">
+      <div
+        className="py-24 text-center"
+        role="status"
+        aria-label={
+          language === "mr" ? "डॅशबोर्ड लोड होत आहे" : "Loading your dashboard"
+        }
+      >
         <div className="inline-block w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+    <div className={styles.page}>
       <Feedback message={requestError} />
       {/* Top Banner */}
-      <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className={styles.hero}>
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-navy-950">
-            {language === "mr" ? "उद्योजक डॅशबोर्ड" : "Entrepreneur Dashboard"}
+          <p className={styles.eyebrow}>
+            {language === "mr" ? "आपले सदस्य खाते" : "Your member space"}
+          </p>
+          <h1 className={styles.title}>
+            {language === "mr"
+              ? "आपला समुदाय डॅशबोर्ड"
+              : "Your community dashboard"}
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 mt-0.5">
             {language === "mr"
-              ? "आपल्या नोंदणीकृत व्यवसायांची स्थिती आणि जाहिरात बुकिंग ट्रॅक करा."
-              : "Manage and monitor your business profile submissions and advertisement bookings."}
+              ? "आपल्या आवडत्या व्यवसायांची यादी, नोंदणी अर्ज आणि जाहिरात बुकिंग एकाच ठिकाणी."
+              : "Your saved contacts, business applications and advertisement bookings, together in one place."}
           </p>
         </div>
 
@@ -134,8 +159,127 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      <div
+        className={styles.stats}
+        aria-label={language === "mr" ? "खात्याचा आढावा" : "Account overview"}
+      >
+        <a href="#saved-businesses">
+          <Bookmark size={19} aria-hidden="true" />
+          <strong>{shortlist.loading ? "…" : shortlist.savedIds.size}</strong>
+          <span>
+            {language === "mr" ? "जतन केलेले व्यवसाय" : "Saved businesses"}
+          </span>
+        </a>
+        <a href="#my-businesses">
+          <Building2 size={19} aria-hidden="true" />
+          <strong>{businesses.length}</strong>
+          <span>
+            {language === "mr" ? "व्यवसाय नोंदणी" : "Business applications"}
+          </span>
+        </a>
+        <a href="#my-advertisements">
+          <Megaphone size={19} aria-hidden="true" />
+          <strong>{ads.length}</strong>
+          <span>
+            {language === "mr" ? "जाहिरात बुकिंग" : "Advertisement bookings"}
+          </span>
+        </a>
+      </div>
+
+      <section
+        id="saved-businesses"
+        className={styles.section}
+        aria-labelledby="saved-businesses-title"
+      >
+        <div className={styles.sectionHeading}>
+          <div>
+            <h2 id="saved-businesses-title">
+              <Bookmark size={20} aria-hidden="true" />
+              {language === "mr" ? "जतन केलेले व्यवसाय" : "Saved businesses"}
+            </h2>
+            <p>
+              {language === "mr"
+                ? "आपली खासगी यादी. सार्वजनिक डिरेक्टरीत असलेले व्यवसाय येथे दिसतात."
+                : "Your private shortlist. Only listings currently available in the public directory appear here."}
+            </p>
+          </div>
+          <Link href="/directory">
+            {language === "mr" ? "व्यवसाय शोधा" : "Explore the directory"}
+            <ArrowRight size={15} aria-hidden="true" />
+          </Link>
+        </div>
+        <Feedback message={shortlist.error} />
+        {shortlist.error && (
+          <button
+            type="button"
+            className="text-sm font-semibold underline text-emerald-900 min-h-10"
+            onClick={shortlist.retry}
+          >
+            {language === "mr"
+              ? "यादी पुन्हा लोड करा"
+              : "Reload saved businesses"}
+          </button>
+        )}
+        {shortlist.unavailableCount > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4 text-sm text-amber-950">
+            <p>
+              {language === "mr"
+                ? `${shortlist.unavailableCount} जतन केलेले व्यवसाय सध्या सार्वजनिक डिरेक्टरीत नाहीत. आपल्या यादीत जागा करण्यासाठी त्या नोंदी काढू शकता.`
+                : `${shortlist.unavailableCount} saved listings are no longer in the public directory. Remove these saved references to free space in your shortlist.`}
+            </p>
+            <button
+              type="button"
+              disabled={shortlist.clearingUnavailable}
+              onClick={shortlist.removeUnavailable}
+              className="font-semibold underline min-h-10 disabled:opacity-50"
+            >
+              {language === "mr"
+                ? "अनुपलब्ध जतन नोंदी काढा"
+                : "Remove unavailable saved listings"}
+            </button>
+          </div>
+        )}
+        {shortlist.loading ? (
+          <p className={styles.empty} role="status">
+            {language === "mr"
+              ? "आपली यादी लोड होत आहे…"
+              : "Loading your saved businesses…"}
+          </p>
+        ) : shortlist.businesses.length ? (
+          <div className={styles.savedGrid}>
+            {shortlist.businesses.map((business) => (
+              <BusinessCard
+                key={business.id}
+                business={business}
+                saved={shortlist.savedIds.has(business.id)}
+                savePending={shortlist.pendingIds.has(business.id)}
+                onSave={shortlist.toggle}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className={styles.empty}>
+            <Bookmark size={28} aria-hidden="true" />
+            <h3>
+              {language === "mr"
+                ? "उपयुक्त संपर्क जतन करा"
+                : "Keep useful contacts close"}
+            </h3>
+            <p>
+              {language === "mr"
+                ? "डिरेक्टरीतील व्यवसायावरील जतन बटण वापरा. आपली यादी येथे दिसेल."
+                : "Use the bookmark on any directory listing to save it here for your next project or visit."}
+            </p>
+            <Link href="/directory">
+              {language === "mr" ? "व्यवसाय शोधा" : "Find a business"}
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
+          </div>
+        )}
+      </section>
+
       {/* Section 1: My Registered Businesses */}
-      <div className="space-y-3">
+      <div id="my-businesses" className="space-y-3 scroll-mt-28">
         <h2 className="text-lg font-bold text-navy-950 flex items-center space-x-2">
           <Building2 className="w-4 h-4 text-amber-600" />
           <span>
@@ -271,7 +415,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Section 2: My Ad Bookings */}
-      <div className="space-y-4">
+      <div id="my-advertisements" className="space-y-4 scroll-mt-28">
         <h2 className="text-xl font-bold text-navy-950 flex items-center space-x-2">
           <Megaphone className="w-5 h-5 text-amber-600" />
           <span>

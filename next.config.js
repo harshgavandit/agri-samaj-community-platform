@@ -5,6 +5,9 @@ const nextConfig = {
   // Keep ws's optional native modules out of webpack's server stubs.
   serverExternalPackages: ["ws"],
   images: {
+    // Uploaded local images are permission-checked on every request. The image
+    // optimizer must never turn a revocable /api/files URL into a public cache.
+    localPatterns: [],
     remotePatterns: [{ protocol: "https", hostname: "images.unsplash.com" }],
   },
   async headers() {

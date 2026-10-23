@@ -49,7 +49,7 @@ export default function AdminAdvertisementsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, paymentStatus, status }),
       });
-      fetchBookings();
+      await fetchBookings();
     } catch (e) {
       setRequestError(
         e instanceof Error ? e.message : "Unable to complete the request.",
@@ -192,7 +192,7 @@ export default function AdminAdvertisementsPage() {
                         <button
                           disabled={saving}
                           onClick={() =>
-                            handleUpdate(b.id, "VERIFIED", "APPROVED")
+                            handleUpdate(b.id, "VERIFIED", b.status)
                           }
                           className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold"
                         >

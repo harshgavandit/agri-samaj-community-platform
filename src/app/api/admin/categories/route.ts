@@ -3,6 +3,7 @@ import { apiError, rateLimit, readJson } from "@/lib/http";
 import { prisma } from "@/lib/prisma";
 import { categorySchema } from "@/lib/validation";
 import { NextResponse } from "next/server";
+import { invalidatePublicData } from "@/lib/public-cache";
 
 export async function GET() {
   try {
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
       return category;
     });
 
+    invalidatePublicData("categories", "businesses");
     return NextResponse.json({ success: true, category });
   } catch (error) {
     return apiError(error);

@@ -1,6 +1,8 @@
 "use client";
 import Modal from "@/components/Modal";
 import Feedback from "@/components/Feedback";
+import AdminPagination from "@/components/AdminPagination";
+import type { Pagination } from "@/lib/pagination";
 import { apiFetch } from "@/lib/client-api";
 
 import { useLanguage } from "@/components/LanguageContext";
@@ -8,7 +10,7 @@ import { getLocalizedBusiness } from "@/lib/localize";
 import { ArrowLeft, Check, Filter, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 function AdminBusinessesContent() {
   const searchParams = useSearchParams();
@@ -20,32 +22,67 @@ function AdminBusinessesContent() {
     searchParams.get("status") || "ALL",
   );
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState<Pagination>({
+    page: 1,
+    limit: 25,
+    total: 0,
+    totalPages: 0,
+  });
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedBusiness, setSelectedBusiness] = useState<any | null>(null);
   const [remarks, setRemarks] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
 
-  const fetchBusinesses = async () => {
-    setLoading(true);
-    try {
-      const res = await apiFetch(
-        `/api/admin/businesses?status=${filterStatus}`,
-      );
-      const data = await res.json();
-      if (data.businesses) setBusinesses(data.businesses);
-    } catch (e) {
-      setRequestError(
-        e instanceof Error ? e.message : "Unable to complete the request.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchBusinesses = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      setRequestError("");
+      try {
+        const params = new URLSearchParams({
+          status: filterStatus,
+          q: query,
+          page: String(page),
+          limit: "25",
+        });
+        const res = await apiFetch(`/api/admin/businesses?${params}`, {
+          signal,
+        });
+        const data = await res.json();
+        if (signal?.aborted) return;
+        if (data.businesses) setBusinesses(data.businesses);
+        if (data.pagination) {
+          setPagination(data.pagination);
+          if (page > Math.max(1, data.pagination.totalPages))
+            setPage(Math.max(1, data.pagination.totalPages));
+        }
+      } catch (e) {
+        if (signal?.aborted) return;
+        setRequestError(
+          e instanceof Error ? e.message : "Unable to complete the request.",
+        );
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [filterStatus, query, page],
+  );
 
   useEffect(() => {
-    fetchBusinesses();
-  }, [filterStatus]);
+    const controller = new AbortController();
+    void fetchBusinesses(controller.signal);
+    return () => controller.abort();
+  }, [fetchBusinesses]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setQuery(search.trim());
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const handleStatusChange = async (id: string, newStatus: string) => {
     if (saving) return;
@@ -81,15 +118,7 @@ function AdminBusinessesContent() {
     }
   };
 
-  const filtered = businesses.filter((b) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      b.businessName.toLowerCase().includes(q) ||
-      b.ownerName.toLowerCase().includes(q) ||
-      b.refNumber.toLowerCase().includes(q)
-    );
-  });
+  const filtered = businesses;
 
   return (
     <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
@@ -125,14 +154,18 @@ function AdminBusinessesContent() {
 
       {/* Filters and Search Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center space-x-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <Filter className="w-4 h-4 text-slate-400" />
           {["ALL", "PENDING", "APPROVED", "REVISION_REQUIRED", "REJECTED"].map(
             (st) => (
               <button
                 disabled={saving}
                 key={st}
-                onClick={() => setFilterStatus(st)}
+                onClick={() => {
+                  setFilterStatus(st);
+                  setPage(1);
+                }}
+                aria-pressed={filterStatus === st}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
                   filterStatus === st
                     ? "bg-navy-950 text-white"
@@ -166,7 +199,9 @@ function AdminBusinessesContent() {
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
-            type="text"
+            type="search"
+            aria-label={language === "mr" ? "अर्ज शोधा" : "Search applications"}
+            maxLength={200}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={
@@ -278,6 +313,19 @@ function AdminBusinessesContent() {
         </div>
       )}
 
+      {!loading && filtered.length === 0 && (
+        <p className="rounded-xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-600">
+          {language === "mr"
+            ? "या निकषांशी जुळणारा अर्ज सापडला नाही."
+            : "No applications match these filters."}
+        </p>
+      )}
+      <AdminPagination
+        pagination={pagination}
+        loading={loading || saving}
+        onPageChange={setPage}
+      />
+
       {/* Review Modal */}
       {selectedBusiness &&
         (() => {
@@ -300,6 +348,11 @@ function AdminBusinessesContent() {
                   </div>
                   <button
                     disabled={saving}
+                    aria-label={
+                      language === "mr"
+                        ? "अर्ज तपासणी बंद करा"
+                        : "Close business review"
+                    }
                     onClick={() => setSelectedBusiness(null)}
                     className="p-1 rounded text-slate-400 hover:text-navy-950"
                   >

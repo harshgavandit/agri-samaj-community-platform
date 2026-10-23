@@ -16,7 +16,8 @@ export default function CommunityCard({ entry }: { entry: CommunityEntry }) {
           alt={mr ? entry.titleMr : entry.titleEn}
           width={800}
           height={450}
-          unoptimized
+          sizes="(max-width: 480px) 100vw, (max-width: 800px) 50vw, 33vw"
+          unoptimized={entry.coverImageUrl.startsWith("/api/files/")}
         />
       )}
       <div className="card-kicker">

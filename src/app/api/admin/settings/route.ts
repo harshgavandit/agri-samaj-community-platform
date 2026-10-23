@@ -4,6 +4,7 @@ import { defaultSettings } from "@/lib/community";
 import { settingsSchema } from "@/lib/community-validation";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { invalidatePublicData } from "@/lib/public-cache";
 export async function GET() {
   try {
     await requireAuth(["ADMIN"]);
@@ -38,6 +39,7 @@ export async function POST(request: Request) {
       });
       return tx.siteSettings.findUniqueOrThrow({ where: { id: "public" } });
     });
+    invalidatePublicData("community");
     return NextResponse.json({ success: true, settings });
   } catch (error) {
     return apiError(error);

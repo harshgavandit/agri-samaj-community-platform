@@ -22,10 +22,11 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  businesses BusinessProfile[]
-  adBookings AdvertisementBooking[]
-  auditLogs  AuditLog[]
-  uploads    Upload[]
+  businesses      BusinessProfile[]
+  adBookings      AdvertisementBooking[]
+  auditLogs       AuditLog[]
+  uploads         Upload[]
+  savedBusinesses SavedBusiness[]
 }
 
 model BusinessCategory {
@@ -117,8 +118,10 @@ model BusinessProfile {
   updatedAt DateTime @updatedAt
 
   adBookings AdvertisementBooking[]
+  savedBy    SavedBusiness[]
 
   @@index([status, createdAt])
+  @@index([status, createdAt, id])
   @@index([categoryId, status])
   @@index([userId, createdAt])
 }
@@ -218,6 +221,8 @@ model ContactInquiry {
   adminNotes String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  @@index([status, createdAt])
 }
 
 model AuditLog {
@@ -279,22 +284,22 @@ model RateLimit {
 }
 
 model CommunityContent {
-  id             String   @id @default(uuid())
-  slug           String   @unique
-  kind           String   @default("RESOURCE")
+  id             String    @id @default(uuid())
+  slug           String    @unique
+  kind           String    @default("RESOURCE")
   titleMr        String
   titleEn        String
   summaryMr      String
   summaryEn      String
   bodyMr         String
   bodyEn         String
-  sources        Json     @default("[]")
-  sourceNoteMr   String   @default("")
-  sourceNoteEn   String   @default("")
-  period         String   @default("EVERGREEN")
-  status         String   @default("DRAFT")
-  sourceVerified Boolean  @default(false)
-  featured       Boolean  @default(false)
+  sources        Json      @default("[]")
+  sourceNoteMr   String    @default("")
+  sourceNoteEn   String    @default("")
+  period         String    @default("EVERGREEN")
+  status         String    @default("DRAFT")
+  sourceVerified Boolean   @default(false)
+  featured       Boolean   @default(false)
   coverImageUrl  String?
   coverCredit    String?
   actionUrl      String?
@@ -303,11 +308,25 @@ model CommunityContent {
   editorNotes    String?
   reviewedBy     String?
   verifiedAt     DateTime?
-  revision       Int      @default(1)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  revision       Int       @default(1)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([status, kind, featured])
+  @@index([status, sourceVerified, updatedAt])
+}
+
+// A member's private shortlist. The public listing remains the source of truth.
+model SavedBusiness {
+  userId            String
+  businessProfileId String
+  createdAt         DateTime        @default(now())
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  businessProfile   BusinessProfile @relation(fields: [businessProfileId], references: [id], onDelete: Cascade)
+
+  @@id([userId, businessProfileId])
+  @@index([userId, createdAt])
+  @@index([businessProfileId])
 }
 
 model SiteSettings {

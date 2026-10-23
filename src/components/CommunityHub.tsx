@@ -1,9 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 import { apiFetch } from "@/lib/client-api";
 import { CommunityEntry, ContentKind, kindLabels } from "@/lib/community";
+import type { PublicContentPage } from "@/lib/public-data";
 import { useLanguage } from "./LanguageContext";
 import CommunityCard from "./CommunityCard";
 const sections = {
@@ -46,43 +48,123 @@ const sections = {
 } as const;
 export default function CommunityHub({
   section,
+  initialData,
+  initialError = "",
+  initialQuery = "",
+  initialKind = "",
+  initialPage = 1,
 }: {
   section: keyof typeof sections;
+  initialData?: PublicContentPage;
+  initialError?: string;
+  initialQuery?: string;
+  initialKind?: string;
+  initialPage?: number;
 }) {
   const { language } = useLanguage();
   const mr = language === "mr";
   const config = sections[section];
-  const [entries, setEntries] = useState<CommunityEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [query, setQuery] = useState("");
-  const [kind, setKind] = useState("");
+  const searchParams = useSearchParams();
+  const query = (searchParams.get("q") || "").slice(0, 200).trim();
+  const requestedKind = searchParams.get("kind") || "";
+  const kind = (config.kinds as readonly string[]).includes(requestedKind)
+    ? requestedKind
+    : "";
+  const requestedPage = Number(searchParams.get("page") || 1);
+  const page = Number.isInteger(requestedPage)
+    ? Math.min(100000, Math.max(1, requestedPage))
+    : 1;
+  const key = JSON.stringify([section, query, kind, page]);
+  const initialKey = JSON.stringify([
+    section,
+    initialQuery,
+    initialKind,
+    initialPage,
+  ]);
+  const initialRequest = useRef(true);
+  const requestVersion = useRef(0);
+  const [entries, setEntries] = useState<CommunityEntry[]>(
+    initialData?.entries || [],
+  );
+  const [pagination, setPagination] = useState(
+    initialData?.pagination || {
+      page: initialPage,
+      limit: 12,
+      total: 0,
+      totalPages: 0,
+    },
+  );
+  const [resultKey, setResultKey] = useState(initialKey);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(initialError);
+  const [draftQuery, setDraftQuery] = useState(initialQuery);
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
+    setDraftQuery(query);
+  }, [query, section]);
+  useEffect(() => {
+    if (initialRequest.current && key === initialKey && attempt === 0) {
+      initialRequest.current = false;
+      return;
+    }
+    initialRequest.current = false;
     const controller = new AbortController();
+    const version = ++requestVersion.current;
     setLoading(true);
     setError("");
-    apiFetch("/api/community", { signal: controller.signal })
+    const params = new URLSearchParams({
+      kinds: kind || config.kinds.join(","),
+      q: query,
+      page: String(page),
+      limit: "12",
+    });
+    apiFetch(`/api/community?${params}`, { signal: controller.signal })
       .then((r) => r.json())
-      .then((data) => setEntries(data.entries))
+      .then((data: PublicContentPage) => {
+        if (controller.signal.aborted || version !== requestVersion.current)
+          return;
+        setEntries(data.entries);
+        setPagination(data.pagination);
+        setResultKey(key);
+      })
       .catch((e) => {
-        if (!controller.signal.aborted) setError(e.message);
+        if (!controller.signal.aborted && version === requestVersion.current) {
+          setError(e.message);
+          setResultKey(key);
+        }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted && version === requestVersion.current)
+          setLoading(false);
       });
     return () => controller.abort();
-  }, [attempt]);
-  const filtered = entries.filter(
-    (entry) =>
-      (config.kinds as readonly string[]).includes(entry.kind) &&
-      (!kind || entry.kind === kind) &&
-      (!query ||
-        [entry.titleMr, entry.titleEn, entry.summaryMr, entry.summaryEn]
-          .join(" ")
-          .toLocaleLowerCase()
-          .includes(query.trim().toLocaleLowerCase())),
-  );
+  }, [key, initialKey, query, kind, page, config.kinds, attempt]);
+  const updateFilters = (
+    nextQuery: string,
+    nextKind: string,
+    nextPage = 1,
+    push = false,
+  ) => {
+    const params = new URLSearchParams();
+    if (nextQuery.trim()) params.set("q", nextQuery.trim());
+    if (nextKind) params.set("kind", nextKind);
+    if (nextPage > 1) params.set("page", String(nextPage));
+    window.history[push ? "pushState" : "replaceState"](
+      null,
+      "",
+      `/${section}` + (params.size ? "?" + params.toString() : ""),
+    );
+  };
+  useEffect(() => {
+    if (draftQuery.trim() === query) return;
+    const timer = setTimeout(
+      () => updateFilters(draftQuery.slice(0, 200), kind),
+      350,
+    );
+    return () => clearTimeout(timer);
+  }, [draftQuery, query, kind]);
+  const pending = loading || resultKey !== key;
+  const filtered = entries;
   return (
     <div className="page-shell">
       <div className="breadcrumb">
@@ -125,9 +207,9 @@ export default function CommunityHub({
           </span>
           <input
             type="search"
-            value={query}
+            value={draftQuery}
             maxLength={200}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => setDraftQuery(e.target.value)}
             placeholder={
               mr
                 ? "विषय, अभ्यासक्रम किंवा साधन शोधा…"
@@ -137,7 +219,10 @@ export default function CommunityHub({
         </label>
         <label>
           <span className="sr-only">{mr ? "विषय" : "Topic"}</span>
-          <select value={kind} onChange={(e) => setKind(e.target.value)}>
+          <select
+            value={kind}
+            onChange={(e) => updateFilters(draftQuery, e.target.value)}
+          >
             <option value="">{mr ? "सर्व विषय" : "All topics"}</option>
             {config.kinds.map((value) => (
               <option value={value} key={value}>
@@ -147,14 +232,14 @@ export default function CommunityHub({
           </select>
         </label>
         <span className="result-count" role="status" aria-live="polite">
-          {loading
+          {pending
             ? mr
               ? "माहिती मिळवत आहोत…"
               : "Loading resources…"
-            : `${filtered.length} ${mr ? "नोंदी" : "entries"}`}
+            : `${pagination.total} ${mr ? "नोंदी" : "entries"}`}
         </span>
       </div>
-      {error ? (
+      {error && !pending ? (
         <div className="empty-state" role="alert">
           <h2>
             {mr
@@ -169,7 +254,7 @@ export default function CommunityHub({
             {mr ? "पुन्हा प्रयत्न करा" : "Try again"}
           </button>
         </div>
-      ) : loading ? (
+      ) : pending ? (
         <div className="content-grid" aria-busy="true">
           {[1, 2, 3].map((i) => (
             <div className="loading-card" key={i} />
@@ -196,13 +281,42 @@ export default function CommunityHub({
           <button
             className="button button-light"
             onClick={() => {
-              setKind("");
-              setQuery("");
+              updateFilters("", "");
             }}
           >
             {mr ? "शोध साफ करा" : "Clear search"}
           </button>
         </div>
+      )}
+      {!pending && !error && pagination.total > 0 && (
+        <nav
+          className="mt-7 flex flex-wrap items-center justify-between gap-4"
+          aria-label={mr ? "समुदाय पृष्ठे" : "Community pagination"}
+        >
+          <p className="text-sm text-slate-600" role="status">
+            {mr
+              ? `पृष्ठ ${page} / ${Math.max(1, pagination.totalPages)} · ${pagination.total} पैकी ${Math.min((page - 1) * 12 + 1, pagination.total)}–${Math.min(page * 12, pagination.total)} नोंदी`
+              : `Page ${page} of ${Math.max(1, pagination.totalPages)} · ${pagination.total} entries`}
+          </p>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              className="quiet-action"
+              disabled={page <= 1}
+              onClick={() => updateFilters(query, kind, page - 1, true)}
+            >
+              {mr ? "मागील" : "Previous"}
+            </button>
+            <button
+              type="button"
+              className="quiet-action"
+              disabled={page >= pagination.totalPages}
+              onClick={() => updateFilters(query, kind, page + 1, true)}
+            >
+              {mr ? "पुढील" : "Next"}
+            </button>
+          </div>
+        </nav>
       )}
       <aside className="contribution-strip">
         <div>

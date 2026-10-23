@@ -229,7 +229,8 @@ test("assistant API: origins, validation, file signature, reply tampering and pe
     data: { message: "", language: "en" },
   });
   expect(limited.status()).toBe(429);
-  expect(limited.headers()["retry-after"]).toBe("60");
+  expect(Number(limited.headers()["retry-after"])).toBeGreaterThanOrEqual(1);
+  expect(Number(limited.headers()["retry-after"])).toBeLessThanOrEqual(60);
   expect(await db.rateLimit.count()).toBeGreaterThan(0);
 });
 

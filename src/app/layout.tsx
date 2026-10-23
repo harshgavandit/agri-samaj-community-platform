@@ -50,6 +50,21 @@ export default function RootLayout({
   return (
     <html lang="mr">
       <body className="min-h-screen flex flex-col bg-[#FAF8F5] text-navy-950 antialiased selection:bg-amber-200 selection:text-amber-900">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "Aagri Samaj Community Platform",
+              alternateName: "आगरी समाज",
+              url: siteOrigin(),
+              inLanguage: ["mr-IN", "en-IN"],
+              description:
+                "Community information, local business discovery, publications and public resources in Marathi and English.",
+            }).replaceAll("<", "\\u003c"),
+          }}
+        />
         <LanguageProvider>
           <a href="#main-content" className="skip-link">
             मुख्य मजकुराकडे जा / Skip to content
