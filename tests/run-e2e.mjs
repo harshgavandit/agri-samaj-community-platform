@@ -58,6 +58,8 @@ const run = (args) =>
         : reject(new Error(`Command failed (${code}): ${args[0]}`)),
     );
   });
+if (process.env.E2E_AI_LIVE === "true")
+  await run(["--import", "tsx", "tests/prepare-assistant-audio.ts"]);
 await run(["node_modules/prisma/build/index.js", "migrate", "deploy"]);
 await run(["prisma/seed.js"]);
 env.RESET_EMAIL = env.ADMIN_EMAIL;
