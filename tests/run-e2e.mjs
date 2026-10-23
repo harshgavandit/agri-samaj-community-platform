@@ -4,6 +4,8 @@ import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { PrismaClient } from "@prisma/client";
 import { del } from "@vercel/blob";
+import nextEnv from "@next/env";
+if (process.env.E2E_AI_LIVE === "true") nextEnv.loadEnvConfig(process.cwd());
 const root = process.cwd();
 const runId = randomUUID();
 const directory = path.join(root, "storage", "e2e", runId);
@@ -34,6 +36,11 @@ const env = {
   ENABLE_SURVEY_MODULE: "true",
   NEXT_TELEMETRY_DISABLED: "1",
   TRUST_PROXY: "false",
+  // Normal regression tests must never spend a configured provider key.
+  OPENAI_API_KEY:
+    process.env.E2E_AI_LIVE === "true" ? process.env.OPENAI_API_KEY || "" : "",
+  OPENAI_MODEL:
+    process.env.E2E_AI_LIVE === "true" ? process.env.OPENAI_MODEL || "" : "",
   E2E_RUN_ID: runId,
 };
 const run = (args) =>

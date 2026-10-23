@@ -1,4 +1,5 @@
 import Footer from "@/components/Footer";
+import AssistantLauncher from "@/components/AssistantLauncher";
 import { LanguageProvider } from "@/components/LanguageContext";
 import Navbar from "@/components/Navbar";
 import { Analytics } from "@vercel/analytics/next";
@@ -58,6 +59,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <AssistantLauncher />
         </LanguageProvider>
         {process.env.VERCEL === "1" && <Analytics />}
       </body>

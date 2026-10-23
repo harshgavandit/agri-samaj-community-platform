@@ -83,6 +83,26 @@ export default function PrivacyPage() {
               : "We use Vercel Web Analytics to understand aggregate website visits and page views. This analytics service does not use cookies. Registration form contents and uploaded documents are not sent to this analytics service."}
           </p>
         </section>
+        <section className="space-y-2">
+          <h2 className="text-base font-bold text-navy-950">
+            ५. AI सहाय्यक (AI Assistant)
+          </h2>
+          <p>
+            {language === "mr"
+              ? "AI सहाय्यक वापरणे ऐच्छिक आहे. तुम्ही पाठवलेले संदेश, अलीकडील संभाषण आणि संबंधित सार्वजनिक संकेतस्थळ माहिती उत्तरासाठी OpenAI कडे पाठवली जाते. मायक्रोफोन फक्त तुमच्या परवानगीने सुरू होतो. ध्वनिमुद्रण थांबवल्यावर त्याचे लिप्यंतर OpenAI कडून केले जाते; प्रश्न पाठवण्यापूर्वी तुम्ही ते तपासू व बदलू शकता. उत्तर ऐकण्यासाठी त्याचा मजकूर OpenAI कडे पाठवला जातो आणि आवाज AI निर्मित असतो. आम्ही संभाषण किंवा ध्वनिमुद्रणे डेटाबेसमध्ये साठवत नाही. पॅनेल बंद केल्यावर स्थानिक संभाषण मिटते. गैरवापर रोखण्यासाठी मर्यादित विनंती गणना साठवली जाते. पासवर्ड, ओळखपत्रे किंवा आर्थिक माहिती पाठवू नका. AI कडून चुका होऊ शकतात; दिलेले स्रोत तपासा."
+              : "The AI assistant is optional. Messages you send, recent conversation and relevant public website information are sent to OpenAI to generate answers. The microphone starts only with your permission. After you stop recording, OpenAI transcribes the audio; you can review and edit the transcript before sending your question. To hear a reply, its text is sent to OpenAI and the resulting voice is AI-generated. We do not save conversations or recordings in our database. Closing the panel clears the local conversation. Limited request counters are stored to prevent abuse. Do not send passwords, identity documents or financial information. AI can make mistakes; check the linked sources."}
+          </p>
+          <p>
+            <a
+              href="https://openai.com/policies/privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              OpenAI privacy policy
+            </a>
+          </p>
+        </section>
       </div>
     </div>
   );
