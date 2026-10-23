@@ -160,6 +160,16 @@ test("assistant retains generated audio when autoplay is blocked and offers manu
     page.getByRole("button", { name: "Stop audio", exact: true }),
   ).toBeVisible();
   expect(requests).toBe(1);
+  await page.getByRole("button", { name: "Stop audio", exact: true }).click();
+  // Clearing a media source queues an error event; stopping intentionally
+  // must detach the handler before that event can report a false failure.
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
 });
 
 test("assistant API: origins, validation, file signature, reply tampering and persisted rate limits", async ({
@@ -356,6 +366,13 @@ test("LIVE browser: microphone recording to transcript, review, real chat and pl
       page.getByRole("button", { name: "Stop audio", exact: true }),
     ).toBeVisible({ timeout: 60000 });
     await page.getByRole("button", { name: "Stop audio", exact: true }).click();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+    await expect(page.getByRole("dialog").getByRole("alert")).toHaveCount(0);
     await page.screenshot({
       path: info.outputPath("assistant-live-desktop.png"),
     });

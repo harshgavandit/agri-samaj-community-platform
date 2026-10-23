@@ -68,6 +68,8 @@ export default function CommunityAssistant({
 
   function stopAudio() {
     if (audio.current) {
+      audio.current.onerror = null;
+      audio.current.onended = null;
       audio.current.pause();
       audio.current.src = "";
       audio.current = null;
@@ -118,7 +120,11 @@ export default function CommunityAssistant({
       if (recorder.current?.state === "recording") recorder.current.stop();
       if (timer.current) clearInterval(timer.current);
       stream.current?.getTracks().forEach((track) => track.stop());
-      audio.current?.pause();
+      if (audio.current) {
+        audio.current.onerror = null;
+        audio.current.onended = null;
+        audio.current.pause();
+      }
       if (audioUrl.current) URL.revokeObjectURL(audioUrl.current);
       element?.close();
     };
