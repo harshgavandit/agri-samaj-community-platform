@@ -315,6 +315,41 @@ test("unknown provider citations and incomplete answers are rejected instead of 
   }
 });
 
+test("provider citation collections accept the boundary and reject oversized answers", async () => {
+  knowledgeStub();
+  let sourceCount = 20;
+  mock.method(globalThis, "fetch", async () =>
+    Response.json({
+      status: "completed",
+      output: [
+        {
+          content: [
+            {
+              type: "output_text",
+              text: JSON.stringify({
+                answer: "Create an account, then register your business.",
+                sourceIds: Array(sourceCount).fill("H1"),
+              }),
+            },
+          ],
+        },
+      ],
+    }),
+  );
+  const accepted = await chat(
+    request({ message: "How can I register?", language: "en" }),
+  );
+  assert.equal(accepted.status, 200);
+  assert.equal((await accepted.json()).sources[0].url, "/register-business");
+  for (sourceCount of [21, 1000]) {
+    const rejected = await chat(
+      request({ message: "How can I register?", language: "en" }),
+    );
+    assert.equal(rejected.status, 502);
+    assert.match((await rejected.json()).error, /could not verify its sources/);
+  }
+});
+
 test("speech cannot narrate arbitrary client text and transcription rejects invalid audio before provider calls", async () => {
   const provider = mock.method(globalThis, "fetch", async () => {
     throw new Error("must not call provider");

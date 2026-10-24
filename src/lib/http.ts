@@ -72,10 +72,10 @@ export async function readBytes(request: Request, max = 128 * 1024) {
   return Buffer.concat(chunks);
 }
 
-export async function readJson<T extends z.ZodTypeAny>(
+export async function readJson<Output>(
   request: Request,
-  schema: T,
-): Promise<z.infer<T>> {
+  schema: z.ZodType<Output>,
+): Promise<Output> {
   if (
     request.headers
       .get("content-type")
