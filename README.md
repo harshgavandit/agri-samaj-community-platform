@@ -62,7 +62,7 @@ Configure `.env` before continuing:
 | `DATABASE_URL`, `DIRECT_URL` | PostgreSQL runtime and migration connections. Remote connections must require TLS. |
 | `JWT_SECRET` | A unique cryptographically random secret of at least 32 characters. |
 | `APP_URL`, `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` locally; the HTTPS origin when hosted. |
-| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | Administrator details for seeding. Use a unique password of 12–72 bytes. Existing accounts are not overwritten. |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | Administrator details for seeding. Use a unique password of at least 12 characters and at most 72 UTF-8 bytes. Existing accounts are not overwritten. |
 | `UPLOAD_DIR` | Optional private durable directory for local uploads, outside `public/`. |
 | `BLOB_READ_WRITE_TOKEN` | Private Blob store on Vercel; keep it server-side. |
 
