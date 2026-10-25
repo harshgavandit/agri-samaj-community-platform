@@ -93,6 +93,8 @@ Browser tests need a dedicated **local** PostgreSQL server. Set `E2E_DATABASE_UR
 
 [CI](.github/workflows/ci.yml) starts PostgreSQL and runs lint, type checks, unit tests, dependency audit, production build and browser journeys. Regressions cover registration/upload ownership, withdrawn-image privacy, directory filtering, private shortlists, admin pagination, session validation, request bounds and assistant controls.
 
+[Assistant unit tests](tests/assistant.test.ts) stub database and provider responses to check admission, public-data projections, citation identifiers, recording validation and signed speech. They do not measure answer quality, Marathi fluency or live-provider availability. Matching a source identifier establishes membership in the retrieved set, not that every generated claim is supported by that source.
+
 ## Operational scope
 
 - Business and advertisement publication requires administrator review. Advertisement payment references are reviewed manually; this is not an automated payment processor.
@@ -110,4 +112,4 @@ Browser tests need a dedicated **local** PostgreSQL server. Set `E2E_DATABASE_UR
 | `tests/` | Unit, security and Playwright regression tests |
 | `scripts/` | Environment checks, deployment and maintenance helpers |
 
-Released under the [MIT license](LICENSE).
+Released under the [MIT license](LICENSE). For private vulnerability reports, see [the security policy](SECURITY.md).
