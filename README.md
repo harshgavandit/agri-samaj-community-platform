@@ -4,6 +4,10 @@ A Marathi-English community platform for discovering local businesses, sharing p
 
 [Visit the website](https://agri-samaj-community-platform.vercel.app) · [Application routes](src/app) · [Database schema](prisma/schema.prisma) · [CI](.github/workflows/ci.yml)
 
+[![XERJ Corpus Hub contributor](https://hub.xerj.org/contributors/harshgavandit/badge.svg)](https://hub.xerj.org/contributors/harshgavandit)
+
+The **bilingual AI chat and voice implementation was selected for the XERJ Corpus Hub** as a worked reference for AI coding agents. The [corpus listing](https://hub.xerj.org/corpus/harshgavandit--agri-samaj-community-platform) indexes the repository at the selected [23 October 2026 commit](https://github.com/harshgavandit/agri-samaj-community-platform/commit/8e94c8ca8409c93d08534357181ef96fa6d7a2c5), with repository, commit and file-line attribution. [Contributor selection](https://hub.xerj.org/contributors/harshgavandit).
+
 ![Agri Samaj community homepage](docs/images/community-homepage.png)
 
 ## What the platform does
